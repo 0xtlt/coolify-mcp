@@ -23,6 +23,26 @@ Get your API token from Coolify dashboard: **Keys & Tokens > API tokens**
 
 ## Usage
 
+### With Claude Code CLI
+
+Add to your project:
+
+```bash
+claude mcp add coolify -s project \
+  -e COOLIFY_API_URL=http://your-server:8000/api/v1 \
+  -e COOLIFY_TOKEN=your-token \
+  -- bun run /path/to/coolify-mcp/src/index.ts
+```
+
+Or add globally (all projects):
+
+```bash
+claude mcp add coolify -s user \
+  -e COOLIFY_API_URL=http://your-server:8000/api/v1 \
+  -e COOLIFY_TOKEN=your-token \
+  -- bun run /path/to/coolify-mcp/src/index.ts
+```
+
 ### With Claude Desktop
 
 Add to `~/.claude/claude_desktop_config.json`:
