@@ -17,8 +17,8 @@ claude mcp add coolify \
 
 ```bash
 codex mcp add coolify \
-  -e COOLIFY_API_URL=http://your-server:8000/api/v1 \
-  -e COOLIFY_TOKEN=your-token \
+  --env COOLIFY_API_URL=http://your-server:8000/api/v1 \
+  --env COOLIFY_TOKEN=your-token \
   -- npx coolify-mcp
 ```
 
