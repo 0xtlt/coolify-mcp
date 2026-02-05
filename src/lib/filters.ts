@@ -58,16 +58,42 @@ export function filterLogs(logs: DeploymentLog[], filter: LogFilter): Deployment
 
 /**
  * Parse raw log string into structured log entries
- * Handles common log formats like Docker container logs
+ * Handles Coolify log format: {"logs":"[HH:MM:SS] LEVEL: message\n..."}
  */
 export function parseLogString(rawLogs: string): DeploymentLog[] {
-	const lines = rawLogs.split("\n").filter((line) => line.trim());
+	let logContent = rawLogs;
+
+	// Try to parse as JSON and extract "logs" field (Coolify format)
+	try {
+		const parsed = JSON.parse(rawLogs);
+		if (parsed && typeof parsed.logs === "string") {
+			logContent = parsed.logs;
+		}
+	} catch {
+		// Not JSON, use raw string
+	}
+
+	const lines = logContent.split("\n").filter((line) => line.trim());
+	const today = new Date().toISOString().split("T")[0];
+
 	return lines.map((line) => {
-		// Try to parse timestamp at beginning of line
-		const timestampMatch = line.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\s]*)\s+(.*)$/);
-		if (timestampMatch) {
-			const [, timestamp, rest] = timestampMatch;
-			// Try to extract log level
+		// Coolify format: [HH:MM:SS] LEVEL: message
+		const coolifyMatch = line.match(
+			/^\[(\d{2}:\d{2}:\d{2})\]\s*(DEBUG|INFO|WARN|ERROR|FATAL):\s*(.*)$/i,
+		);
+		if (coolifyMatch) {
+			const [, time, level, message] = coolifyMatch;
+			return {
+				timestamp: `${today}T${time}Z`,
+				level: level.toLowerCase(),
+				message,
+			};
+		}
+
+		// ISO timestamp format: 2024-01-01T12:00:00Z LEVEL: message
+		const isoMatch = line.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\s]*)\s+(.*)$/);
+		if (isoMatch) {
+			const [, timestamp, rest] = isoMatch;
 			const levelMatch = rest.match(/^\[?(DEBUG|INFO|WARN|ERROR|FATAL)\]?\s*:?\s*(.*)$/i);
 			if (levelMatch) {
 				const [, level, message] = levelMatch;
@@ -75,6 +101,7 @@ export function parseLogString(rawLogs: string): DeploymentLog[] {
 			}
 			return { timestamp, message: rest };
 		}
+
 		// Fallback: no timestamp, entire line is message
 		return { timestamp: new Date().toISOString(), message: line };
 	});
