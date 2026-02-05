@@ -2,26 +2,42 @@
 
 MCP server for managing Coolify instances. Control applications, monitor deployments, and retrieve logs directly from Claude or any MCP-compatible client.
 
-## Usage
+## Installation
 
-### With Claude Code CLI
-
-Add to your project:
+### Claude Code
 
 ```bash
-claude mcp add coolify -s project \
+claude mcp add coolify \
   -e COOLIFY_API_URL=http://your-server:8000/api/v1 \
   -e COOLIFY_TOKEN=your-token \
-  -- bun run /path/to/coolify-mcp/src/index.ts
+  -- npx coolify-mcp
 ```
 
-Or add globally (all projects):
+### Codex
 
 ```bash
-claude mcp add coolify -s user \
+codex mcp add coolify \
   -e COOLIFY_API_URL=http://your-server:8000/api/v1 \
   -e COOLIFY_TOKEN=your-token \
-  -- bun run /path/to/coolify-mcp/src/index.ts
+  -- npx coolify-mcp
+```
+
+### Other MCP clients
+
+Run with npx:
+
+```bash
+COOLIFY_API_URL=http://your-server:8000/api/v1 \
+COOLIFY_TOKEN=your-token \
+npx coolify-mcp
+```
+
+### From source
+
+```bash
+git clone https://github.com/0xtlt/coolify-mcp
+cd coolify-mcp && bun install
+COOLIFY_API_URL=... COOLIFY_TOKEN=... bun run src/index.ts
 ```
 
 ### With Claude Desktop
