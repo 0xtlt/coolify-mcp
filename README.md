@@ -2,25 +2,6 @@
 
 MCP server for managing Coolify instances. Control applications, monitor deployments, and retrieve logs directly from Claude or any MCP-compatible client.
 
-## Installation
-
-```bash
-bun install
-```
-
-## Configuration
-
-Set environment variables (or use `.env` file):
-
-```bash
-export COOLIFY_API_URL=http://your-coolify-server:8000/api/v1
-export COOLIFY_TOKEN=your-bearer-token
-export COOLIFY_TIMEOUT=30000  # optional, default 30s
-export DEBUG=false            # optional
-```
-
-Get your API token from Coolify dashboard: **Keys & Tokens > API tokens**
-
 ## Usage
 
 ### With Claude Code CLI
@@ -62,18 +43,9 @@ Add to `~/.claude/claude_desktop_config.json`:
 }
 ```
 
-### Standalone
+### Get your API token
 
-```bash
-bun run start
-```
-
-### Development
-
-```bash
-bun run dev      # Watch mode
-bun run inspect  # MCP Inspector
-```
+Coolify dashboard: **Keys & Tokens > API tokens**
 
 ## Available Tools
 
@@ -107,13 +79,22 @@ The `coolify_get_logs` tool supports:
 | `coolify://deployments` | List of all deployments |
 | `coolify://servers` | List of all servers |
 
-## Scripts
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `COOLIFY_API_URL` | Yes | Coolify API URL (e.g. `http://your-server:8000/api/v1`) |
+| `COOLIFY_TOKEN` | Yes | Bearer token from Coolify dashboard |
+| `COOLIFY_TIMEOUT` | No | Request timeout in ms (default: 30000) |
+| `DEBUG` | No | Enable debug logging (default: false) |
+
+## Development
 
 ```bash
-bun run check     # Lint + format + typecheck
-bun run lint      # Lint only
-bun run format    # Format only
-bun run typecheck # TypeScript check
+bun install              # Install dependencies
+bun run dev              # Watch mode
+bun run inspect          # MCP Inspector
+bun run check            # Lint + format + typecheck
 ```
 
 ## License
