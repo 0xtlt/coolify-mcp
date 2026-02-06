@@ -149,7 +149,6 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	coolify_execute_command_server: { level: "write" },
 	// Phase 5: Backup management - write
 	coolify_create_database_backup: { level: "write" },
-	coolify_restore_database_backup: { level: "write" },
 	// Phase 5: Backup management - destructive
 	coolify_delete_database_backup: {
 		level: "destructive",

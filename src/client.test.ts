@@ -291,20 +291,21 @@ describe("CoolifyClient", () => {
 		expect(options.method).toBe("POST");
 	});
 
-	it("uses DELETE for deleteDatabaseBackup", async () => {
+	it("uses DELETE for deleteDatabaseBackup with UUID", async () => {
 		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
-		await client.deleteDatabaseBackup("db-1", 42);
+		await client.deleteDatabaseBackup("db-1", "backup-uuid-1");
 		const [url, options] = fetchCalls[0];
-		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/backups/42");
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/backups/backup-uuid-1");
 		expect(options.method).toBe("DELETE");
 	});
 
-	it("uses POST for restoreDatabaseBackup", async () => {
-		mockFetch(new Response('{"message":"restoring"}', { status: 200 }));
-		await client.restoreDatabaseBackup("db-1", 42);
-		const [url, options] = fetchCalls[0];
-		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/backups/42/restore");
-		expect(options.method).toBe("POST");
+	it("appends delete_s3 query param for deleteDatabaseBackup", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteDatabaseBackup("db-1", "backup-uuid-1", { delete_s3: true });
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/databases/db-1/backups/backup-uuid-1?delete_s3=true",
+		);
 	});
 
 	it("parses JSON response correctly", async () => {

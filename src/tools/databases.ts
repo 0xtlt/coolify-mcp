@@ -226,44 +226,25 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 	if (isToolAllowed("coolify_delete_database_backup", config)) {
 		server.tool(
 			"coolify_delete_database_backup",
-			"[DESTRUCTIVE] Delete a backup of a Coolify database",
+			"[DESTRUCTIVE] Delete a scheduled backup configuration for a Coolify database",
 			{
 				uuid: schemas.uuid.describe("UUID of the database"),
-				backup_id: z.number().int().describe("ID of the backup to delete"),
+				backup_uuid: schemas.uuid.describe("UUID of the scheduled backup to delete"),
+				delete_s3: z.boolean().default(false).describe("Also delete backup files from S3 storage"),
 				confirm: schemas.confirm,
 			},
-			async ({ uuid, backup_id, confirm }) => {
+			async ({ uuid, backup_uuid, delete_s3, confirm }) => {
 				if (!isToolAllowed("coolify_delete_database_backup", config))
 					return readonlyError("coolify_delete_database_backup");
 				const check = checkConfirmation(
 					"coolify_delete_database_backup",
-					{ uuid, backup_id, confirm },
+					{ uuid, backup_uuid, confirm },
 					config,
 				);
 				if (!check.proceed) return check.response!;
 				return wrap(async () => {
-					const result = await client.deleteDatabaseBackup(uuid, backup_id);
-					return result.message || `Backup ${backup_id} deleted`;
-				});
-			},
-		);
-	}
-
-	// Write: restore backup
-	if (isToolAllowed("coolify_restore_database_backup", config)) {
-		server.tool(
-			"coolify_restore_database_backup",
-			"[WRITE] Restore a Coolify database from a backup",
-			{
-				uuid: schemas.uuid.describe("UUID of the database"),
-				backup_id: z.number().int().describe("ID of the backup to restore"),
-			},
-			async ({ uuid, backup_id }) => {
-				if (!isToolAllowed("coolify_restore_database_backup", config))
-					return readonlyError("coolify_restore_database_backup");
-				return wrap(async () => {
-					const result = await client.restoreDatabaseBackup(uuid, backup_id);
-					return result.message || `Database ${uuid} restore from backup ${backup_id} started`;
+					const result = await client.deleteDatabaseBackup(uuid, backup_uuid, { delete_s3 });
+					return result.message || `Backup ${backup_uuid} deleted`;
 				});
 			},
 		);

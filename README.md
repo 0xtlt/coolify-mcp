@@ -2,7 +2,7 @@
 
 MCP server for managing Coolify instances. Control applications, databases, services, servers, and more directly from Claude or any MCP-compatible client.
 
-**76 tools | 7 resources | 4 prompts**
+**75 tools | 7 resources | 4 prompts**
 
 ## Installation
 
@@ -78,7 +78,7 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_restart_application` | [DESTRUCTIVE] Restart an application |
 | `coolify_delete_application` | [DESTRUCTIVE] Delete an application |
 
-### Databases (12)
+### Databases (11)
 
 | Tool | Description |
 |------|-------------|
@@ -88,8 +88,7 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_update_database` | [WRITE] Update database config |
 | `coolify_list_database_backups` | List backups for a database |
 | `coolify_create_database_backup` | [WRITE] Create a database backup |
-| `coolify_delete_database_backup` | [DESTRUCTIVE] Delete a database backup |
-| `coolify_restore_database_backup` | [WRITE] Restore a database from backup |
+| `coolify_delete_database_backup` | [DESTRUCTIVE] Delete a scheduled backup config |
 | `coolify_start_database` | [WRITE] Start a stopped database |
 | `coolify_stop_database` | [DESTRUCTIVE] Stop a database |
 | `coolify_restart_database` | [DESTRUCTIVE] Restart a database |

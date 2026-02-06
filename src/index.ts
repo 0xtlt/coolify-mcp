@@ -27,7 +27,7 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "2.2.0",
+			version: "2.2.1",
 		},
 		{
 			instructions: `Coolify MCP server for managing self-hosted PaaS instances.
@@ -65,7 +65,7 @@ async function main() {
 20. **Database env vars**: list_database_envs → create_database_env / update_database_envs_bulk / delete_database_env
 21. **Database/service logs**: get_database_logs / get_service_logs (same filters as get_logs)
 22. **Execute command**: execute_command_application / execute_command_server (run shell commands)
-23. **Backup management**: list_database_backups → create_database_backup / delete_database_backup / restore_database_backup`,
+23. **Backup management**: list_database_backups → create_database_backup / delete_database_backup`,
 		},
 	);
 

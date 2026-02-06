@@ -95,7 +95,6 @@ describe("isToolAllowed", () => {
 	it("blocks backup write/destructive in readonly mode", () => {
 		const config = { ...baseConfig, readonly: true };
 		expect(isToolAllowed("coolify_create_database_backup", config)).toBe(false);
-		expect(isToolAllowed("coolify_restore_database_backup", config)).toBe(false);
 		expect(isToolAllowed("coolify_delete_database_backup", config)).toBe(false);
 	});
 
@@ -155,16 +154,6 @@ describe("checkConfirmation", () => {
 		const r2 = checkConfirmation("coolify_execute_command_server", { uuid: "s" }, config);
 		expect(r1.proceed).toBe(true);
 		expect(r2.proceed).toBe(true);
-	});
-
-	it("does not require confirmation for restore_database_backup (write level)", () => {
-		const config = { ...baseConfig, requireConfirm: true };
-		const result = checkConfirmation(
-			"coolify_restore_database_backup",
-			{ uuid: "db-1", backup_id: 1 },
-			config,
-		);
-		expect(result.proceed).toBe(true);
 	});
 
 	it("does not require confirmation for create_database_backup (write level)", () => {

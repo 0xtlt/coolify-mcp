@@ -265,12 +265,13 @@ export class CoolifyClient {
 		return this.request("POST", `/databases/${uuid}/backups`);
 	}
 
-	async deleteDatabaseBackup(uuid: string, backupId: number): Promise<{ message: string }> {
-		return this.request("DELETE", `/databases/${uuid}/backups/${backupId}`);
-	}
-
-	async restoreDatabaseBackup(uuid: string, backupId: number): Promise<{ message: string }> {
-		return this.request("POST", `/databases/${uuid}/backups/${backupId}/restore`);
+	async deleteDatabaseBackup(
+		uuid: string,
+		backupUuid: string,
+		opts?: { delete_s3?: boolean },
+	): Promise<{ message: string }> {
+		const qs = opts?.delete_s3 ? "?delete_s3=true" : "";
+		return this.request("DELETE", `/databases/${uuid}/backups/${backupUuid}${qs}`);
 	}
 
 	// Services
