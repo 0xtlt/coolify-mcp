@@ -168,7 +168,7 @@ export function registerApplicationTools(server: McpServer, client: CoolifyClien
 				environment_name: schemas.environmentName,
 				name: z.string().optional().describe("Application name"),
 				description: z.string().optional().describe("Application description"),
-				fqdn: z.string().optional().describe("Fully qualified domain name(s)"),
+				domains: z.string().optional().describe("Domain name(s) for the application"),
 				git_repository: z
 					.string()
 					.optional()
@@ -189,10 +189,10 @@ export function registerApplicationTools(server: McpServer, client: CoolifyClien
 					.string()
 					.optional()
 					.describe("GitHub App UUID (required for private-github-app)"),
-				deploy_key_id: z
-					.number()
+				private_key_uuid: z
+					.string()
 					.optional()
-					.describe("Deploy key ID (required for private-deploy-key)"),
+					.describe("Private key UUID (required for private-deploy-key)"),
 				dockerfile: z
 					.string()
 					.optional()

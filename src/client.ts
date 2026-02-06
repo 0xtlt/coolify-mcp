@@ -60,7 +60,11 @@ export class CoolifyClient {
 
 			const text = await response.text();
 			if (!text) return {} as T;
-			return JSON.parse(text) as T;
+			try {
+				return JSON.parse(text) as T;
+			} catch {
+				return text as T;
+			}
 		} catch (error) {
 			clearTimeout(timeoutId);
 			if (error instanceof CoolifyApiError) throw error;
@@ -329,7 +333,7 @@ export class CoolifyClient {
 	}
 
 	async healthcheck(): Promise<string> {
-		return this.request<string>("GET", "/healthcheck");
+		return this.request<string>("GET", "/health");
 	}
 
 	// Teams
