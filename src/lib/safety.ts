@@ -131,6 +131,30 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 		level: "destructive",
 		dangerWarning: "Permanently deletes the service environment variable.",
 	},
+	// Phase 5: Database env vars - read
+	coolify_list_database_envs: { level: "read" },
+	// Phase 5: Database env vars - write
+	coolify_create_database_env: { level: "write" },
+	coolify_update_database_envs_bulk: { level: "write" },
+	// Phase 5: Database env vars - destructive
+	coolify_delete_database_env: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the database environment variable.",
+	},
+	// Phase 5: Logs - read
+	coolify_get_database_logs: { level: "read" },
+	coolify_get_service_logs: { level: "read" },
+	// Phase 5: Execute command - write
+	coolify_execute_command_application: { level: "write" },
+	coolify_execute_command_server: { level: "write" },
+	// Phase 5: Backup management - write
+	coolify_create_database_backup: { level: "write" },
+	coolify_restore_database_backup: { level: "write" },
+	// Phase 5: Backup management - destructive
+	coolify_delete_database_backup: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes a database backup.",
+	},
 	// Phase 3: Create operations - write
 	coolify_create_application: { level: "write" },
 	coolify_create_database: { level: "write" },

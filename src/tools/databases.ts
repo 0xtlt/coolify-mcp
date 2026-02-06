@@ -10,7 +10,9 @@ import { toDatabaseSummary } from "../types/api";
 
 function getDatabaseActions(uuid: string, status?: string): ResponseAction[] {
 	const actions: ResponseAction[] = [
+		{ tool: "coolify_get_database_logs", args: { uuid }, hint: "View logs" },
 		{ tool: "coolify_list_database_backups", args: { uuid }, hint: "View backups" },
+		{ tool: "coolify_create_database_backup", args: { uuid }, hint: "Create backup" },
 		{ tool: "coolify_update_database", args: { uuid }, hint: "Update config" },
 	];
 	if (status === "running" || status?.startsWith("running:")) {
@@ -198,6 +200,70 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 					if (custom_fields) Object.assign(data, custom_fields);
 					const result = await client.createDatabase(type, data);
 					return { message: `Database (${type}) created`, uuid: result.uuid };
+				});
+			},
+		);
+	}
+
+	// Write: create backup
+	if (isToolAllowed("coolify_create_database_backup", config)) {
+		server.tool(
+			"coolify_create_database_backup",
+			"[WRITE] Create a backup of a Coolify database",
+			{ uuid: schemas.uuid.describe("UUID of the database") },
+			async ({ uuid }) => {
+				if (!isToolAllowed("coolify_create_database_backup", config))
+					return readonlyError("coolify_create_database_backup");
+				return wrap(async () => {
+					const result = await client.createDatabaseBackup(uuid);
+					return result.message || `Backup created for database ${uuid}`;
+				});
+			},
+		);
+	}
+
+	// Destructive: delete backup
+	if (isToolAllowed("coolify_delete_database_backup", config)) {
+		server.tool(
+			"coolify_delete_database_backup",
+			"[DESTRUCTIVE] Delete a backup of a Coolify database",
+			{
+				uuid: schemas.uuid.describe("UUID of the database"),
+				backup_id: z.number().int().describe("ID of the backup to delete"),
+				confirm: schemas.confirm,
+			},
+			async ({ uuid, backup_id, confirm }) => {
+				if (!isToolAllowed("coolify_delete_database_backup", config))
+					return readonlyError("coolify_delete_database_backup");
+				const check = checkConfirmation(
+					"coolify_delete_database_backup",
+					{ uuid, backup_id, confirm },
+					config,
+				);
+				if (!check.proceed) return check.response!;
+				return wrap(async () => {
+					const result = await client.deleteDatabaseBackup(uuid, backup_id);
+					return result.message || `Backup ${backup_id} deleted`;
+				});
+			},
+		);
+	}
+
+	// Write: restore backup
+	if (isToolAllowed("coolify_restore_database_backup", config)) {
+		server.tool(
+			"coolify_restore_database_backup",
+			"[WRITE] Restore a Coolify database from a backup",
+			{
+				uuid: schemas.uuid.describe("UUID of the database"),
+				backup_id: z.number().int().describe("ID of the backup to restore"),
+			},
+			async ({ uuid, backup_id }) => {
+				if (!isToolAllowed("coolify_restore_database_backup", config))
+					return readonlyError("coolify_restore_database_backup");
+				return wrap(async () => {
+					const result = await client.restoreDatabaseBackup(uuid, backup_id);
+					return result.message || `Database ${uuid} restore from backup ${backup_id} started`;
 				});
 			},
 		);

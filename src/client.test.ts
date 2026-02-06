@@ -215,6 +215,98 @@ describe("CoolifyClient", () => {
 		expect(options.method).toBe("DELETE");
 	});
 
+	// Phase 5: Database env vars
+	it("constructs correct URL for listDatabaseEnvs", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listDatabaseEnvs("db-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/envs");
+	});
+
+	it("uses POST for createDatabaseEnv", async () => {
+		mockFetch(new Response('{"uuid":"env-new"}', { status: 200 }));
+		await client.createDatabaseEnv("db-1", { key: "PG_PASS", value: "secret" });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/envs");
+		expect(options.method).toBe("POST");
+	});
+
+	it("uses PATCH for updateDatabaseEnvsBulk with { data } wrapping", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.updateDatabaseEnvsBulk("db-1", [{ key: "A", value: "1" }]);
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/envs/bulk");
+		expect(options.method).toBe("PATCH");
+		expect(JSON.parse(options.body as string)).toEqual({ data: [{ key: "A", value: "1" }] });
+	});
+
+	it("uses DELETE for deleteDatabaseEnv", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteDatabaseEnv("db-1", "env-uuid");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/envs/env-uuid");
+		expect(options.method).toBe("DELETE");
+	});
+
+	// Phase 5: Logs
+	it("passes lines parameter to getDatabaseLogs", async () => {
+		mockFetch(new Response('"log line"', { status: 200 }));
+		await client.getDatabaseLogs("db-1", 200);
+		const [url] = fetchCalls[0];
+		expect(url).toContain("/databases/db-1/logs?lines=200");
+	});
+
+	it("passes lines parameter to getServiceLogs", async () => {
+		mockFetch(new Response('"log line"', { status: 200 }));
+		await client.getServiceLogs("svc-1", 300);
+		const [url] = fetchCalls[0];
+		expect(url).toContain("/services/svc-1/logs?lines=300");
+	});
+
+	// Phase 5: Execute command
+	it("uses POST for executeCommandApplication", async () => {
+		mockFetch(new Response('{"result":"ok"}', { status: 200 }));
+		await client.executeCommandApplication("app-1", "ls -la");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/execute-command");
+		expect(options.method).toBe("POST");
+		expect(JSON.parse(options.body as string)).toEqual({ command: "ls -la" });
+	});
+
+	it("uses POST for executeCommandServer", async () => {
+		mockFetch(new Response('{"result":"ok"}', { status: 200 }));
+		await client.executeCommandServer("srv-1", "uptime");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/servers/srv-1/execute-command");
+		expect(options.method).toBe("POST");
+		expect(JSON.parse(options.body as string)).toEqual({ command: "uptime" });
+	});
+
+	// Phase 5: Backup management
+	it("uses POST for createDatabaseBackup", async () => {
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.createDatabaseBackup("db-1");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/backups");
+		expect(options.method).toBe("POST");
+	});
+
+	it("uses DELETE for deleteDatabaseBackup", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteDatabaseBackup("db-1", 42);
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/backups/42");
+		expect(options.method).toBe("DELETE");
+	});
+
+	it("uses POST for restoreDatabaseBackup", async () => {
+		mockFetch(new Response('{"message":"restoring"}', { status: 200 }));
+		await client.restoreDatabaseBackup("db-1", 42);
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/backups/42/restore");
+		expect(options.method).toBe("POST");
+	});
+
 	it("parses JSON response correctly", async () => {
 		const apps = [
 			{

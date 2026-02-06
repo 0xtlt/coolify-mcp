@@ -6,9 +6,11 @@ import { loadConfig } from "./config";
 import { registerPrompts } from "./prompts";
 import { registerResources } from "./resources";
 import { registerApplicationTools } from "./tools/applications";
+import { registerDatabaseEnvTools } from "./tools/database-envs";
 import { registerDatabaseTools } from "./tools/databases";
 import { registerDeploymentTools } from "./tools/deployments";
 import { registerEnvTools } from "./tools/envs";
+import { registerExecuteTools } from "./tools/execute";
 import { registerLogTools } from "./tools/logs";
 import { registerPrivateKeyTools } from "./tools/private-keys";
 import { registerProjectTools } from "./tools/projects";
@@ -25,7 +27,7 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "2.1.0",
+			version: "2.2.0",
 		},
 		{
 			instructions: `Coolify MCP server for managing self-hosted PaaS instances.
@@ -59,15 +61,21 @@ async function main() {
 16. **Private keys**: list_private_keys → get_private_key → create/update/delete_private_key
 17. **Server CRUD**: list_servers → create_server / update_server / delete_server
 18. **Environments**: list_environments → create_environment / delete_environment
-19. **Service env vars**: list_service_envs → create_service_env / update_service_envs_bulk / delete_service_env`,
+19. **Service env vars**: list_service_envs → create_service_env / update_service_envs_bulk / delete_service_env
+20. **Database env vars**: list_database_envs → create_database_env / update_database_envs_bulk / delete_database_env
+21. **Database/service logs**: get_database_logs / get_service_logs (same filters as get_logs)
+22. **Execute command**: execute_command_application / execute_command_server (run shell commands)
+23. **Backup management**: list_database_backups → create_database_backup / delete_database_backup / restore_database_backup`,
 		},
 	);
 
 	// Register all tools (config controls which tools are available based on safety mode)
 	registerApplicationTools(server, client, config);
 	registerDatabaseTools(server, client, config);
+	registerDatabaseEnvTools(server, client, config);
 	registerDeploymentTools(server, client, config);
 	registerEnvTools(server, client, config);
+	registerExecuteTools(server, client, config);
 	registerLogTools(server, client, config);
 	registerProjectTools(server, client, config);
 	registerPrivateKeyTools(server, client, config);

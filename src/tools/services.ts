@@ -9,7 +9,9 @@ import type { Service } from "../types/api";
 import { toServiceSummary } from "../types/api";
 
 function getServiceActions(uuid: string, status?: string): ResponseAction[] {
-	const actions: ResponseAction[] = [];
+	const actions: ResponseAction[] = [
+		{ tool: "coolify_get_service_logs", args: { uuid }, hint: "View logs" },
+	];
 	if (status === "running" || status?.startsWith("running:")) {
 		actions.push(
 			{ tool: "coolify_restart_service", args: { uuid }, hint: "Restart" },

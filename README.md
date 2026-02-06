@@ -2,7 +2,7 @@
 
 MCP server for managing Coolify instances. Control applications, databases, services, servers, and more directly from Claude or any MCP-compatible client.
 
-**65 tools | 7 resources | 4 prompts**
+**76 tools | 7 resources | 4 prompts**
 
 ## Installation
 
@@ -78,7 +78,7 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_restart_application` | [DESTRUCTIVE] Restart an application |
 | `coolify_delete_application` | [DESTRUCTIVE] Delete an application |
 
-### Databases (8)
+### Databases (12)
 
 | Tool | Description |
 |------|-------------|
@@ -87,6 +87,9 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_create_database` | [WRITE] Create PostgreSQL, MySQL, MariaDB, MongoDB, Redis, etc. |
 | `coolify_update_database` | [WRITE] Update database config |
 | `coolify_list_database_backups` | List backups for a database |
+| `coolify_create_database_backup` | [WRITE] Create a database backup |
+| `coolify_delete_database_backup` | [DESTRUCTIVE] Delete a database backup |
+| `coolify_restore_database_backup` | [WRITE] Restore a database from backup |
 | `coolify_start_database` | [WRITE] Start a stopped database |
 | `coolify_stop_database` | [DESTRUCTIVE] Stop a database |
 | `coolify_restart_database` | [DESTRUCTIVE] Restart a database |
@@ -169,11 +172,29 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_update_service_envs_bulk` | [WRITE] Bulk update service env vars |
 | `coolify_delete_service_env` | [DESTRUCTIVE] Delete a service env var |
 
-### Logs (1)
+### Database Env Vars (4)
+
+| Tool | Description |
+|------|-------------|
+| `coolify_list_database_envs` | List env vars for a database |
+| `coolify_create_database_env` | [WRITE] Create a database env var |
+| `coolify_update_database_envs_bulk` | [WRITE] Bulk update database env vars |
+| `coolify_delete_database_env` | [DESTRUCTIVE] Delete a database env var |
+
+### Logs (3)
 
 | Tool | Description |
 |------|-------------|
 | `coolify_get_logs` | Get application logs with filtering |
+| `coolify_get_database_logs` | Get database logs with filtering |
+| `coolify_get_service_logs` | Get service logs with filtering |
+
+### Execute Command (2)
+
+| Tool | Description |
+|------|-------------|
+| `coolify_execute_command_application` | [WRITE] Execute command in application container |
+| `coolify_execute_command_server` | [WRITE] Execute command on server via SSH |
 
 ### System (2)
 
@@ -220,7 +241,7 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 
 ## Log Filtering
 
-The `coolify_get_logs` tool supports:
+The `coolify_get_logs`, `coolify_get_database_logs`, and `coolify_get_service_logs` tools support:
 
 - `level`: Minimum log level (debug, info, warn, error, fatal)
 - `since`/`until`: ISO 8601 timestamps for time range

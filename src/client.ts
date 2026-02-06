@@ -218,6 +218,61 @@ export class CoolifyClient {
 		return this.request<Database>("PATCH", `/databases/${uuid}`, data);
 	}
 
+	// Database Environment Variables
+	async listDatabaseEnvs(dbUuid: string): Promise<EnvironmentVariable[]> {
+		return this.request<EnvironmentVariable[]>("GET", `/databases/${dbUuid}/envs`);
+	}
+
+	async createDatabaseEnv(
+		dbUuid: string,
+		data: {
+			key: string;
+			value: string;
+			is_preview?: boolean;
+			is_literal?: boolean;
+			is_multiline?: boolean;
+			is_shown_once?: boolean;
+		},
+	): Promise<{ uuid: string }> {
+		return this.request("POST", `/databases/${dbUuid}/envs`, data);
+	}
+
+	async updateDatabaseEnvsBulk(
+		dbUuid: string,
+		envs: Array<{
+			key: string;
+			value: string;
+			is_preview?: boolean;
+			is_literal?: boolean;
+			is_multiline?: boolean;
+			is_shown_once?: boolean;
+		}>,
+	): Promise<EnvironmentVariable[]> {
+		return this.request("PATCH", `/databases/${dbUuid}/envs/bulk`, { data: envs });
+	}
+
+	async deleteDatabaseEnv(dbUuid: string, envUuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/databases/${dbUuid}/envs/${envUuid}`);
+	}
+
+	// Database Logs
+	async getDatabaseLogs(uuid: string, lines = 100): Promise<string> {
+		return this.request<string>("GET", `/databases/${uuid}/logs?lines=${lines}`);
+	}
+
+	// Database Backups
+	async createDatabaseBackup(uuid: string): Promise<{ message: string }> {
+		return this.request("POST", `/databases/${uuid}/backups`);
+	}
+
+	async deleteDatabaseBackup(uuid: string, backupId: number): Promise<{ message: string }> {
+		return this.request("DELETE", `/databases/${uuid}/backups/${backupId}`);
+	}
+
+	async restoreDatabaseBackup(uuid: string, backupId: number): Promise<{ message: string }> {
+		return this.request("POST", `/databases/${uuid}/backups/${backupId}/restore`);
+	}
+
 	// Services
 	async listServices(): Promise<Service[]> {
 		return this.request<Service[]>("GET", "/services");
@@ -342,6 +397,11 @@ export class CoolifyClient {
 		return this.request<{ uuid: string }>("POST", `/databases/${type}`, data);
 	}
 
+	// Service Logs
+	async getServiceLogs(uuid: string, lines = 100): Promise<string> {
+		return this.request<string>("GET", `/services/${uuid}/logs?lines=${lines}`);
+	}
+
 	// Service Environment Variables
 	async listServiceEnvs(serviceUuid: string): Promise<EnvironmentVariable[]> {
 		return this.request<EnvironmentVariable[]>("GET", `/services/${serviceUuid}/envs`);
@@ -411,6 +471,15 @@ export class CoolifyClient {
 
 	async deletePrivateKey(uuid: string): Promise<{ message: string }> {
 		return this.request("DELETE", `/security/keys/${uuid}`);
+	}
+
+	// Execute Command
+	async executeCommandApplication(uuid: string, command: string): Promise<{ result: string }> {
+		return this.request("POST", `/applications/${uuid}/execute-command`, { command });
+	}
+
+	async executeCommandServer(uuid: string, command: string): Promise<{ result: string }> {
+		return this.request("POST", `/servers/${uuid}/execute-command`, { command });
 	}
 
 	// System
