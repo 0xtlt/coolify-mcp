@@ -1,28 +1,17 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { CoolifyClient } from "../client";
-import { CoolifyApiError, NetworkError } from "../lib/errors";
+import type { Config } from "../config";
 import { filterLogs, type LogFilter, parseLogString } from "../lib/filters";
+import * as schemas from "../lib/schemas";
+import { wrap } from "../lib/wrap";
 
-function formatError(error: unknown): string {
-	if (error instanceof CoolifyApiError) {
-		return error.toUserMessage();
-	}
-	if (error instanceof NetworkError) {
-		return `Network error: ${error.message}`;
-	}
-	if (error instanceof Error) {
-		return `Error: ${error.message}`;
-	}
-	return `Unknown error: ${String(error)}`;
-}
-
-export function registerLogTools(server: McpServer, client: CoolifyClient) {
+export function registerLogTools(server: McpServer, client: CoolifyClient, _config: Config) {
 	server.tool(
 		"coolify_get_logs",
 		"Retrieve logs for a Coolify application with optional filtering by level, time range, or text search",
 		{
-			uuid: z.string().describe("UUID of the application"),
+			uuid: schemas.uuid.describe("UUID of the application"),
 			level: z
 				.enum(["debug", "info", "warn", "error", "fatal"])
 				.optional()
@@ -33,12 +22,17 @@ export function registerLogTools(server: McpServer, client: CoolifyClient) {
 				.string()
 				.optional()
 				.describe("Text to search for in log messages (case-insensitive)"),
-			limit: z.number().min(1).max(1000).default(100).describe("Maximum number of log entries"),
+			limit: z
+				.number()
+				.min(1)
+				.max(1000)
+				.default(100)
+				.describe("Maximum number of log entries to fetch from the server"),
 			tail: z.boolean().default(false).describe("Return the most recent logs (tail behavior)"),
 		},
 		async ({ uuid, level, since, until, search, limit, tail }) => {
-			try {
-				const rawLogs = await client.getApplicationLogs(uuid);
+			return wrap(async () => {
+				const rawLogs = await client.getApplicationLogs(uuid, limit);
 				const logs = parseLogString(
 					typeof rawLogs === "string" ? rawLogs : JSON.stringify(rawLogs),
 				);
@@ -55,29 +49,13 @@ export function registerLogTools(server: McpServer, client: CoolifyClient) {
 				const filteredLogs = filterLogs(logs, filter);
 
 				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify(
-								{
-									applicationUuid: uuid,
-									totalLogs: logs.length,
-									filteredCount: filteredLogs.length,
-									filters: { level, since, until, search, limit, tail },
-									logs: filteredLogs,
-								},
-								null,
-								2,
-							),
-						},
-					],
+					applicationUuid: uuid,
+					totalLogs: logs.length,
+					filteredCount: filteredLogs.length,
+					filters: { level, since, until, search, limit, tail },
+					logs: filteredLogs,
 				};
-			} catch (error) {
-				return {
-					content: [{ type: "text", text: formatError(error) }],
-					isError: true,
-				};
-			}
+			});
 		},
 	);
 }

@@ -5,9 +5,15 @@ const configSchema = z.object({
 	coolifyToken: z.string().min(1),
 	timeout: z.number().default(30000),
 	debug: z.boolean().default(false),
+	readonly: z.boolean().default(false),
+	requireConfirm: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof configSchema>;
+
+export function validateConfig(raw: Record<string, unknown>): Config {
+	return configSchema.parse(raw);
+}
 
 export function loadConfig(): Config {
 	const raw = {
@@ -17,12 +23,18 @@ export function loadConfig(): Config {
 			? Number.parseInt(process.env.COOLIFY_TIMEOUT, 10)
 			: undefined,
 		debug: process.env.DEBUG === "true",
+		readonly: process.env.COOLIFY_READONLY === "true",
+		requireConfirm: process.env.COOLIFY_REQUIRE_CONFIRM === "true",
 	};
 
-	const result = configSchema.safeParse(raw);
-	if (!result.success) {
-		console.error("Configuration error:", result.error.flatten());
+	try {
+		return validateConfig(raw);
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			console.error("Configuration error:", error.flatten());
+		} else {
+			console.error("Configuration error:", error);
+		}
 		process.exit(1);
 	}
-	return result.data;
 }

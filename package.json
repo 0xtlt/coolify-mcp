@@ -9,7 +9,9 @@
 	"scripts": {
 		"dev": "bun --watch src/index.ts",
 		"start": "bun src/index.ts",
-		"check": "biome check --write . && bun run typecheck",
+		"test": "bun test",
+		"test:watch": "bun test --watch",
+		"check": "biome check --write . && bun run typecheck && bun test",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome lint --write .",
 		"format": "biome format --write .",

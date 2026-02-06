@@ -69,16 +69,16 @@ export class CoolifyClient {
 		return this.request<Application>("GET", `/applications/${uuid}`);
 	}
 
-	async startApplication(uuid: string): Promise<void> {
-		await this.request("GET", `/applications/${uuid}/start`);
+	async startApplication(uuid: string): Promise<{ message: string; deployment_uuid?: string }> {
+		return this.request("POST", `/applications/${uuid}/start`);
 	}
 
-	async stopApplication(uuid: string): Promise<void> {
-		await this.request("GET", `/applications/${uuid}/stop`);
+	async stopApplication(uuid: string): Promise<{ message: string }> {
+		return this.request("POST", `/applications/${uuid}/stop`);
 	}
 
-	async restartApplication(uuid: string): Promise<void> {
-		await this.request("GET", `/applications/${uuid}/restart`);
+	async restartApplication(uuid: string): Promise<{ message: string; deployment_uuid?: string }> {
+		return this.request("POST", `/applications/${uuid}/restart`);
 	}
 
 	// Deployments
@@ -93,15 +93,17 @@ export class CoolifyClient {
 	async triggerDeploy(
 		uuid: string,
 		force = false,
-	): Promise<{ deployments: Array<{ message: string; resource_uuid: string; deployment_uuid: string }> }> {
+	): Promise<{
+		deployments: Array<{ message: string; resource_uuid: string; deployment_uuid: string }>;
+	}> {
 		const params = new URLSearchParams({ uuid });
 		if (force) params.set("force", "true");
 		return this.request("GET", `/deploy?${params.toString()}`);
 	}
 
 	// Logs
-	async getApplicationLogs(uuid: string): Promise<string> {
-		return this.request<string>("GET", `/applications/${uuid}/logs`);
+	async getApplicationLogs(uuid: string, lines = 100): Promise<string> {
+		return this.request<string>("GET", `/applications/${uuid}/logs?lines=${lines}`);
 	}
 
 	// Servers

@@ -15,28 +15,32 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "1.0.0",
+			version: "1.1.0",
 		},
 		{
 			instructions: `Coolify MCP server for managing self-hosted PaaS instances.
 
-## Usage Tips
-- **Large responses**: List operations return full API data which can be large (100k+ chars). When saved to file, use jq to extract relevant fields:
-  \`cat response.json | jq '.[] | {uuid, name, status, fqdn}'\`
-- **UUIDs**: Most operations require application/deployment UUIDs. Get them from list operations first.
-- **Logs filtering**: Use level, search, since/until params to reduce log volume.
+## Safety Modes
+- **COOLIFY_READONLY=true**: Only read operations are available (list, get, logs)
+- **COOLIFY_REQUIRE_CONFIRM=true**: Destructive operations (stop, restart, delete) require confirm: true parameter
+
+## Response Format
+- List operations return **summaries** (uuid, name, status) for token efficiency
+- Get operations return **full details** with \`_actions\` hints for next steps
+- [WRITE] tools modify state (start, deploy)
+- [DESTRUCTIVE] tools may cause downtime (stop, restart, delete)
 
 ## Common workflows
-1. **Check app status**: list_applications → jq filter by name → get status
+1. **Check app status**: list_applications → get_application (follow _actions)
 2. **Debug failing deploy**: list_deployments (status=failed) → get_logs with search
 3. **Restart app**: get_application (verify uuid) → restart_application`,
 		},
 	);
 
-	// Register all tools
-	registerApplicationTools(server, client);
-	registerDeploymentTools(server, client);
-	registerLogTools(server, client);
+	// Register all tools (config controls which tools are available based on safety mode)
+	registerApplicationTools(server, client, config);
+	registerDeploymentTools(server, client, config);
+	registerLogTools(server, client, config);
 
 	// Register resources
 	registerResources(server, client);
@@ -47,6 +51,9 @@ async function main() {
 
 	if (config.debug) {
 		console.error("[DEBUG] Coolify MCP server started");
+		if (config.readonly) console.error("[DEBUG] Read-only mode enabled");
+		if (config.requireConfirm)
+			console.error("[DEBUG] Confirmation required for destructive operations");
 	}
 }
 
