@@ -21,3 +21,13 @@ export const perPage = z
 	.max(100)
 	.optional()
 	.describe("Items per page (max 100)");
+
+// Shared creation schemas
+export const serverUuid = z.string().min(1).max(100).describe("UUID of the server to deploy on");
+export const projectUuid = z.string().min(1).max(100).describe("UUID of the project");
+export const environmentName = z.string().min(1).describe("Environment name (e.g. 'production')");
+export const instantDeploy = z.boolean().optional().describe("Deploy immediately after creation");
+export const customFields = z
+	.record(z.string(), z.unknown())
+	.optional()
+	.describe("Additional fields not listed above (advanced)");

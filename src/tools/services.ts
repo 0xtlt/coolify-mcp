@@ -19,6 +19,7 @@ function getServiceActions(uuid: string, status?: string): ResponseAction[] {
 		actions.push({ tool: "coolify_start_service", args: { uuid }, hint: "Start" });
 	}
 	actions.push(
+		{ tool: "coolify_update_service", args: { uuid }, hint: "Update config" },
 		{ tool: "coolify_trigger_deploy", args: { uuid }, hint: "Deploy" },
 		{ tool: "coolify_delete_service", args: { uuid }, hint: "Delete" },
 	);
@@ -100,6 +101,73 @@ export function registerServiceTools(server: McpServer, client: CoolifyClient, c
 				return wrap(async () => {
 					const result = await client.restartService(uuid);
 					return result.message || `Service ${uuid} restart command sent`;
+				});
+			},
+		);
+	}
+
+	// Write: create
+	if (isToolAllowed("coolify_create_service", config)) {
+		server.tool(
+			"coolify_create_service",
+			"[WRITE] Create a new Coolify service (one-click Docker Compose service)",
+			{
+				server_uuid: schemas.serverUuid,
+				project_uuid: schemas.projectUuid,
+				environment_name: schemas.environmentName,
+				type: z
+					.string()
+					.min(1)
+					.describe("Service type (e.g. 'plausibleanalytics', 'minio', 'grafana')"),
+				name: z.string().optional().describe("Service name"),
+				description: z.string().optional().describe("Service description"),
+				instant_deploy: schemas.instantDeploy,
+				custom_fields: schemas.customFields,
+			},
+			async ({ server_uuid, project_uuid, environment_name, type, custom_fields, ...fields }) => {
+				if (!isToolAllowed("coolify_create_service", config))
+					return readonlyError("coolify_create_service");
+				return wrap(async () => {
+					const data: Record<string, unknown> = {
+						server_uuid,
+						project_uuid,
+						environment_name,
+						type,
+					};
+					for (const [k, v] of Object.entries(fields)) {
+						if (v !== undefined) data[k] = v;
+					}
+					if (custom_fields) Object.assign(data, custom_fields);
+					const result = await client.createService(data);
+					return { message: "Service created", uuid: result.uuid };
+				});
+			},
+		);
+	}
+
+	// Write: update
+	if (isToolAllowed("coolify_update_service", config)) {
+		server.tool(
+			"coolify_update_service",
+			"[WRITE] Update configuration of a Coolify service",
+			{
+				uuid: schemas.uuid,
+				name: z.string().optional().describe("Service name"),
+				description: z.string().optional().describe("Service description"),
+				docker_compose_raw: z.string().optional().describe("Raw Docker Compose content"),
+				custom_fields: schemas.customFields,
+			},
+			async ({ uuid, custom_fields, ...fields }) => {
+				if (!isToolAllowed("coolify_update_service", config))
+					return readonlyError("coolify_update_service");
+				return wrap(async () => {
+					const data: Record<string, unknown> = {};
+					for (const [k, v] of Object.entries(fields)) {
+						if (v !== undefined) data[k] = v;
+					}
+					if (custom_fields) Object.assign(data, custom_fields);
+					await client.updateService(uuid, data);
+					return `Service ${uuid} updated`;
 				});
 			},
 		);

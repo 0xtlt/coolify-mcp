@@ -137,6 +137,72 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 		);
 	}
 
+	// Write: create
+	if (isToolAllowed("coolify_create_database", config)) {
+		server.tool(
+			"coolify_create_database",
+			"[WRITE] Create a new Coolify database",
+			{
+				type: z
+					.enum([
+						"postgresql",
+						"mysql",
+						"mariadb",
+						"mongodb",
+						"redis",
+						"dragonfly",
+						"keydb",
+						"clickhouse",
+					])
+					.describe("Database engine type"),
+				server_uuid: schemas.serverUuid,
+				project_uuid: schemas.projectUuid,
+				environment_name: schemas.environmentName,
+				name: z.string().optional().describe("Database name"),
+				description: z.string().optional().describe("Database description"),
+				image: z.string().optional().describe("Docker image (e.g. postgres:16-alpine)"),
+				is_public: z.boolean().optional().describe("Make database publicly accessible"),
+				public_port: z.number().optional().describe("Public port number"),
+				limits_memory: z.string().optional().describe("Memory limit (e.g. 512m, 1g)"),
+				limits_cpus: z.string().optional().describe("CPU limit (e.g. 0.5, 2)"),
+				instant_deploy: schemas.instantDeploy,
+				type_config: z
+					.record(z.string(), z.unknown())
+					.optional()
+					.describe(
+						"Type-specific config. Postgres: postgres_user, postgres_password, postgres_db. MySQL/MariaDB: mysql_root_password, mysql_database, mysql_user, mysql_password. MongoDB: mongo_initdb_root_username, mongo_initdb_root_password. Redis: redis_password. ClickHouse: clickhouse_admin_user, clickhouse_admin_password",
+					),
+				custom_fields: schemas.customFields,
+			},
+			async ({
+				type,
+				server_uuid,
+				project_uuid,
+				environment_name,
+				type_config,
+				custom_fields,
+				...fields
+			}) => {
+				if (!isToolAllowed("coolify_create_database", config))
+					return readonlyError("coolify_create_database");
+				return wrap(async () => {
+					const data: Record<string, unknown> = {
+						server_uuid,
+						project_uuid,
+						environment_name,
+					};
+					for (const [k, v] of Object.entries(fields)) {
+						if (v !== undefined) data[k] = v;
+					}
+					if (type_config) Object.assign(data, type_config);
+					if (custom_fields) Object.assign(data, custom_fields);
+					const result = await client.createDatabase(type, data);
+					return { message: `Database (${type}) created`, uuid: result.uuid };
+				});
+			},
+		);
+	}
+
 	// Write: update
 	if (isToolAllowed("coolify_update_database", config)) {
 		server.tool(

@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CoolifyClient } from "./client";
 import { loadConfig } from "./config";
+import { registerPrompts } from "./prompts";
 import { registerResources } from "./resources";
 import { registerApplicationTools } from "./tools/applications";
 import { registerDatabaseTools } from "./tools/databases";
@@ -12,6 +13,8 @@ import { registerLogTools } from "./tools/logs";
 import { registerProjectTools } from "./tools/projects";
 import { registerServerTools } from "./tools/servers";
 import { registerServiceTools } from "./tools/services";
+import { registerSystemTools } from "./tools/system";
+import { registerTeamTools } from "./tools/teams";
 
 async function main() {
 	const config = loadConfig();
@@ -20,7 +23,7 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "1.3.0",
+			version: "2.0.0",
 		},
 		{
 			instructions: `Coolify MCP server for managing self-hosted PaaS instances.
@@ -45,7 +48,12 @@ async function main() {
 7. **Environment variables**: list_envs → create_env / update_envs_bulk / delete_env
 8. **Projects & Environments**: list_projects → get_project → list_environments → get_environment
 9. **Update application**: get_application → update_application (modify fields)
-10. **Cancel deployment**: list_deployments (status=in_progress) → cancel_deployment`,
+10. **Cancel deployment**: list_deployments (status=in_progress) → cancel_deployment
+11. **Create application**: list_servers → list_projects → create_application (source_type + params)
+12. **Create database**: list_servers → list_projects → create_database (type + params)
+13. **Create service**: list_servers → list_projects → create_service (type + params)
+14. **Teams**: list_teams → get_current_team → get_team_members
+15. **System info**: get_version / healthcheck`,
 		},
 	);
 
@@ -58,9 +66,14 @@ async function main() {
 	registerProjectTools(server, client, config);
 	registerServerTools(server, client, config);
 	registerServiceTools(server, client, config);
+	registerSystemTools(server, client, config);
+	registerTeamTools(server, client, config);
 
 	// Register resources
 	registerResources(server, client);
+
+	// Register prompts
+	registerPrompts(server);
 
 	// Start server with stdio transport
 	const transport = new StdioServerTransport();

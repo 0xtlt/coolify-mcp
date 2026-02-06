@@ -95,6 +95,25 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 		level: "destructive",
 		dangerWarning: "Permanently deletes the environment variable.",
 	},
+	// Phase 3: Create operations - write
+	coolify_create_application: { level: "write" },
+	coolify_create_database: { level: "write" },
+	coolify_create_service: { level: "write" },
+	coolify_update_service: { level: "write" },
+	coolify_create_project: { level: "write" },
+	coolify_update_project: { level: "write" },
+	// Phase 3: Projects - destructive
+	coolify_delete_project: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the project and all its environments.",
+	},
+	// Phase 3: System - read
+	coolify_get_version: { level: "read" },
+	coolify_healthcheck: { level: "read" },
+	// Phase 3: Teams - read
+	coolify_list_teams: { level: "read" },
+	coolify_get_current_team: { level: "read" },
+	coolify_get_team_members: { level: "read" },
 };
 
 export function getToolMeta(name: string): ToolMeta | undefined {

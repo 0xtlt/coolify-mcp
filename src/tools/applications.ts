@@ -154,6 +154,86 @@ export function registerApplicationTools(server: McpServer, client: CoolifyClien
 		);
 	}
 
+	// Write: create
+	if (isToolAllowed("coolify_create_application", config)) {
+		server.tool(
+			"coolify_create_application",
+			"[WRITE] Create a new Coolify application from various sources",
+			{
+				source_type: z
+					.enum(["public", "private-github-app", "private-deploy-key", "dockerfile", "dockerimage"])
+					.describe("Source type for the application"),
+				server_uuid: schemas.serverUuid,
+				project_uuid: schemas.projectUuid,
+				environment_name: schemas.environmentName,
+				name: z.string().optional().describe("Application name"),
+				description: z.string().optional().describe("Application description"),
+				fqdn: z.string().optional().describe("Fully qualified domain name(s)"),
+				git_repository: z
+					.string()
+					.optional()
+					.describe(
+						"Git repository URL (required for public/private-github-app/private-deploy-key)",
+					),
+				git_branch: z.string().optional().describe("Git branch (default: main)"),
+				build_pack: z
+					.string()
+					.optional()
+					.describe("Build pack (dockerfile, nixpacks, static, dockercompose, dockerimage)"),
+				ports_exposes: z
+					.string()
+					.optional()
+					.describe("Exposed ports, comma-separated (e.g. '3000,8080')"),
+				instant_deploy: schemas.instantDeploy,
+				github_app_uuid: z
+					.string()
+					.optional()
+					.describe("GitHub App UUID (required for private-github-app)"),
+				deploy_key_id: z
+					.number()
+					.optional()
+					.describe("Deploy key ID (required for private-deploy-key)"),
+				dockerfile: z
+					.string()
+					.optional()
+					.describe("Inline Dockerfile content (for dockerfile source_type)"),
+				docker_registry_image_name: z
+					.string()
+					.optional()
+					.describe("Docker image name (required for dockerimage, e.g. 'nginx')"),
+				docker_registry_image_tag: z
+					.string()
+					.optional()
+					.describe("Docker image tag (default: 'latest')"),
+				custom_fields: schemas.customFields,
+			},
+			async ({
+				source_type,
+				server_uuid,
+				project_uuid,
+				environment_name,
+				custom_fields,
+				...fields
+			}) => {
+				if (!isToolAllowed("coolify_create_application", config))
+					return readonlyError("coolify_create_application");
+				return wrap(async () => {
+					const data: Record<string, unknown> = {
+						server_uuid,
+						project_uuid,
+						environment_name,
+					};
+					for (const [k, v] of Object.entries(fields)) {
+						if (v !== undefined) data[k] = v;
+					}
+					if (custom_fields) Object.assign(data, custom_fields);
+					const result = await client.createApplication(source_type, data);
+					return { message: "Application created", uuid: result.uuid };
+				});
+			},
+		);
+	}
+
 	// Destructive: delete
 	if (isToolAllowed("coolify_delete_application", config)) {
 		server.tool(

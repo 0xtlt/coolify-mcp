@@ -151,6 +151,30 @@ export interface EnvironmentSummary {
 	name: string;
 }
 
+// --- Phase 3 types ---
+
+export interface Team {
+	id: number;
+	name: string;
+	description?: string;
+	personal_team?: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface TeamSummary {
+	id: number;
+	name: string;
+	description?: string;
+}
+
+export interface TeamMember {
+	id: number;
+	name: string;
+	email: string;
+	role?: string;
+}
+
 // Transformer functions
 
 export function toApplicationSummary(app: Application): ApplicationSummary {
@@ -212,5 +236,13 @@ export function toEnvironmentSummary(e: Environment): EnvironmentSummary {
 	return {
 		uuid: e.uuid,
 		name: e.name,
+	};
+}
+
+export function toTeamSummary(team: Team): TeamSummary {
+	return {
+		id: team.id,
+		name: team.name,
+		description: team.description,
 	};
 }

@@ -9,6 +9,8 @@ import type {
 	Project,
 	ServerInfo,
 	Service,
+	Team,
+	TeamMember,
 } from "./types/api";
 
 export class CoolifyClient {
@@ -285,5 +287,61 @@ export class CoolifyClient {
 
 	async getEnvironment(projectUuid: string, envName: string): Promise<Environment> {
 		return this.request<Environment>("GET", `/projects/${projectUuid}/${envName}`);
+	}
+
+	async createProject(data: { name: string; description?: string }): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("POST", "/projects", data);
+	}
+
+	async updateProject(uuid: string, data: Record<string, unknown>): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("PATCH", `/projects/${uuid}`, data);
+	}
+
+	async deleteProject(uuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/projects/${uuid}`);
+	}
+
+	// Applications - create
+	async createApplication(
+		sourceType: string,
+		data: Record<string, unknown>,
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("POST", `/applications/${sourceType}`, data);
+	}
+
+	// Databases - create
+	async createDatabase(type: string, data: Record<string, unknown>): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("POST", `/databases/${type}`, data);
+	}
+
+	// Services - create + update
+	async createService(data: Record<string, unknown>): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("POST", "/services", data);
+	}
+
+	async updateService(uuid: string, data: Record<string, unknown>): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("PATCH", `/services/${uuid}`, data);
+	}
+
+	// System
+	async getVersion(): Promise<string> {
+		return this.request<string>("GET", "/version");
+	}
+
+	async healthcheck(): Promise<string> {
+		return this.request<string>("GET", "/healthcheck");
+	}
+
+	// Teams
+	async listTeams(): Promise<Team[]> {
+		return this.request<Team[]>("GET", "/teams");
+	}
+
+	async getCurrentTeam(): Promise<Team> {
+		return this.request<Team>("GET", "/teams/current");
+	}
+
+	async getTeamMembers(teamId: number): Promise<TeamMember[]> {
+		return this.request<TeamMember[]>("GET", `/teams/${teamId}/members`);
 	}
 }

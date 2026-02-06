@@ -7,6 +7,7 @@ import {
 	type Project,
 	type ServerInfo,
 	type Service,
+	type Team,
 	toApplicationSummary,
 	toDatabaseSummary,
 	toDeploymentSummary,
@@ -14,6 +15,7 @@ import {
 	toProjectSummary,
 	toServerSummary,
 	toServiceSummary,
+	toTeamSummary,
 } from "./api";
 
 describe("toApplicationSummary", () => {
@@ -201,6 +203,31 @@ describe("toEnvironmentSummary", () => {
 	it("excludes detail fields", () => {
 		const summary = toEnvironmentSummary(env);
 		expect("id" in summary).toBe(false);
+		expect("created_at" in summary).toBe(false);
+		expect("updated_at" in summary).toBe(false);
+	});
+});
+
+describe("toTeamSummary", () => {
+	const team: Team = {
+		id: 1,
+		name: "my-team",
+		description: "Team description",
+		personal_team: false,
+		created_at: "2024-01-01T00:00:00Z",
+		updated_at: "2024-06-15T00:00:00Z",
+	};
+
+	it("extracts summary fields", () => {
+		const summary = toTeamSummary(team);
+		expect(summary.id).toBe(1);
+		expect(summary.name).toBe("my-team");
+		expect(summary.description).toBe("Team description");
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toTeamSummary(team);
+		expect("personal_team" in summary).toBe(false);
 		expect("created_at" in summary).toBe(false);
 		expect("updated_at" in summary).toBe(false);
 	});
