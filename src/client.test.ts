@@ -142,6 +142,79 @@ describe("CoolifyClient", () => {
 		}
 	});
 
+	// Phase 4: Private Keys
+	it("constructs correct URL for listPrivateKeys", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listPrivateKeys();
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/security/keys");
+	});
+
+	it("constructs correct URL for getPrivateKey", async () => {
+		mockFetch(new Response('{"uuid":"pk-1"}', { status: 200 }));
+		await client.getPrivateKey("pk-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/security/keys/pk-1");
+	});
+
+	it("uses POST for createPrivateKey", async () => {
+		mockFetch(new Response('{"uuid":"pk-new"}', { status: 200 }));
+		await client.createPrivateKey({ name: "test", private_key: "---key---" });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/security/keys");
+		expect(options.method).toBe("POST");
+	});
+
+	// Phase 4: Server CRUD
+	it("uses POST for createServer", async () => {
+		mockFetch(new Response('{"uuid":"srv-new"}', { status: 200 }));
+		await client.createServer({ name: "test", ip: "1.2.3.4", private_key_uuid: "pk-1" });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/servers");
+		expect(options.method).toBe("POST");
+	});
+
+	it("uses DELETE for deleteServer", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteServer("srv-1");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/servers/srv-1");
+		expect(options.method).toBe("DELETE");
+	});
+
+	// Phase 4: Environment CRUD
+	it("uses POST for createEnvironment", async () => {
+		mockFetch(new Response('{"uuid":"env-new"}', { status: 200 }));
+		await client.createEnvironment("proj-1", { name: "staging" });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/projects/proj-1/environments");
+		expect(options.method).toBe("POST");
+	});
+
+	it("uses DELETE for deleteEnvironment", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteEnvironment("proj-1", "staging");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/projects/proj-1/environments/staging");
+		expect(options.method).toBe("DELETE");
+	});
+
+	// Phase 4: Service env vars
+	it("constructs correct URL for listServiceEnvs", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listServiceEnvs("svc-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/services/svc-1/envs");
+	});
+
+	it("uses DELETE for deleteServiceEnv", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteServiceEnv("svc-1", "env-uuid");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/services/svc-1/envs/env-uuid");
+		expect(options.method).toBe("DELETE");
+	});
+
 	it("parses JSON response correctly", async () => {
 		const apps = [
 			{

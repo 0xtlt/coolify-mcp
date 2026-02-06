@@ -10,8 +10,10 @@ import { registerDatabaseTools } from "./tools/databases";
 import { registerDeploymentTools } from "./tools/deployments";
 import { registerEnvTools } from "./tools/envs";
 import { registerLogTools } from "./tools/logs";
+import { registerPrivateKeyTools } from "./tools/private-keys";
 import { registerProjectTools } from "./tools/projects";
 import { registerServerTools } from "./tools/servers";
+import { registerServiceEnvTools } from "./tools/service-envs";
 import { registerServiceTools } from "./tools/services";
 import { registerSystemTools } from "./tools/system";
 import { registerTeamTools } from "./tools/teams";
@@ -23,7 +25,7 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "2.0.0",
+			version: "2.1.0",
 		},
 		{
 			instructions: `Coolify MCP server for managing self-hosted PaaS instances.
@@ -53,7 +55,11 @@ async function main() {
 12. **Create database**: list_servers → list_projects → create_database (type + params)
 13. **Create service**: list_servers → list_projects → create_service (type + params)
 14. **Teams**: list_teams → get_current_team → get_team_members
-15. **System info**: get_version / healthcheck`,
+15. **System info**: get_version / healthcheck
+16. **Private keys**: list_private_keys → get_private_key → create/update/delete_private_key
+17. **Server CRUD**: list_servers → create_server / update_server / delete_server
+18. **Environments**: list_environments → create_environment / delete_environment
+19. **Service env vars**: list_service_envs → create_service_env / update_service_envs_bulk / delete_service_env`,
 		},
 	);
 
@@ -64,8 +70,10 @@ async function main() {
 	registerEnvTools(server, client, config);
 	registerLogTools(server, client, config);
 	registerProjectTools(server, client, config);
+	registerPrivateKeyTools(server, client, config);
 	registerServerTools(server, client, config);
 	registerServiceTools(server, client, config);
+	registerServiceEnvTools(server, client, config);
 	registerSystemTools(server, client, config);
 	registerTeamTools(server, client, config);
 

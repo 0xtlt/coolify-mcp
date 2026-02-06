@@ -36,6 +36,41 @@ describe("isToolAllowed", () => {
 		expect(isToolAllowed("coolify_get_logs", config)).toBe(true);
 	});
 
+	// Phase 4 tools
+	it("blocks private key write/destructive in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_create_private_key", config)).toBe(false);
+		expect(isToolAllowed("coolify_update_private_key", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_private_key", config)).toBe(false);
+	});
+
+	it("allows private key read tools in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_list_private_keys", config)).toBe(true);
+		expect(isToolAllowed("coolify_get_private_key", config)).toBe(true);
+	});
+
+	it("blocks server write/destructive in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_create_server", config)).toBe(false);
+		expect(isToolAllowed("coolify_update_server", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_server", config)).toBe(false);
+	});
+
+	it("blocks environment write/destructive in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_create_environment", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_environment", config)).toBe(false);
+	});
+
+	it("blocks service env write/destructive in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_create_service_env", config)).toBe(false);
+		expect(isToolAllowed("coolify_update_service_envs_bulk", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_service_env", config)).toBe(false);
+		expect(isToolAllowed("coolify_list_service_envs", config)).toBe(true);
+	});
+
 	it("allows unknown tools by default", () => {
 		expect(isToolAllowed("unknown_tool", baseConfig)).toBe(true);
 	});

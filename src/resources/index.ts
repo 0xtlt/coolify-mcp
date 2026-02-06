@@ -5,6 +5,7 @@ import {
 	toApplicationSummary,
 	toDatabaseSummary,
 	toDeploymentSummary,
+	toPrivateKeySummary,
 	toProjectSummary,
 	toServerSummary,
 	toServiceSummary,
@@ -136,6 +137,31 @@ export function registerResources(server: McpServer, client: CoolifyClient) {
 				contents: [
 					{
 						uri: "coolify://servers",
+						mimeType: "text/plain",
+						text: formatError(error),
+					},
+				],
+			};
+		}
+	});
+
+	server.resource("coolify://private-keys", "List of all SSH private keys (summary)", async () => {
+		try {
+			const keys = await client.listPrivateKeys();
+			return {
+				contents: [
+					{
+						uri: "coolify://private-keys",
+						mimeType: "application/json",
+						text: JSON.stringify(keys.map(toPrivateKeySummary), null, 2),
+					},
+				],
+			};
+		} catch (error) {
+			return {
+				contents: [
+					{
+						uri: "coolify://private-keys",
 						mimeType: "text/plain",
 						text: formatError(error),
 					},

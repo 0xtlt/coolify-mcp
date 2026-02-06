@@ -95,6 +95,42 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 		level: "destructive",
 		dangerWarning: "Permanently deletes the environment variable.",
 	},
+	// Phase 4: Private Keys - read
+	coolify_list_private_keys: { level: "read" },
+	coolify_get_private_key: { level: "read" },
+	// Phase 4: Private Keys - write
+	coolify_create_private_key: { level: "write" },
+	coolify_update_private_key: { level: "write" },
+	// Phase 4: Private Keys - destructive
+	coolify_delete_private_key: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the SSH private key. Blocked if in use.",
+	},
+	// Phase 4: Servers - write
+	coolify_create_server: { level: "write" },
+	coolify_update_server: { level: "write" },
+	// Phase 4: Servers - destructive
+	coolify_delete_server: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the server and stops all its resources.",
+	},
+	// Phase 4: Environments - write
+	coolify_create_environment: { level: "write" },
+	// Phase 4: Environments - destructive
+	coolify_delete_environment: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the environment. Must be empty.",
+	},
+	// Phase 4: Service env vars - read
+	coolify_list_service_envs: { level: "read" },
+	// Phase 4: Service env vars - write
+	coolify_create_service_env: { level: "write" },
+	coolify_update_service_envs_bulk: { level: "write" },
+	// Phase 4: Service env vars - destructive
+	coolify_delete_service_env: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the service environment variable.",
+	},
 	// Phase 3: Create operations - write
 	coolify_create_application: { level: "write" },
 	coolify_create_database: { level: "write" },

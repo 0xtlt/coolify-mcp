@@ -4,6 +4,7 @@ import {
 	type Database,
 	type Deployment,
 	type Environment,
+	type PrivateKey,
 	type Project,
 	type ServerInfo,
 	type Service,
@@ -12,6 +13,7 @@ import {
 	toDatabaseSummary,
 	toDeploymentSummary,
 	toEnvironmentSummary,
+	toPrivateKeySummary,
 	toProjectSummary,
 	toServerSummary,
 	toServiceSummary,
@@ -228,6 +230,35 @@ describe("toTeamSummary", () => {
 	it("excludes detail fields", () => {
 		const summary = toTeamSummary(team);
 		expect("personal_team" in summary).toBe(false);
+		expect("created_at" in summary).toBe(false);
+		expect("updated_at" in summary).toBe(false);
+	});
+});
+
+describe("toPrivateKeySummary", () => {
+	const key: PrivateKey = {
+		id: 1,
+		uuid: "pk-001",
+		name: "production-key",
+		description: "SSH key for prod",
+		fingerprint: "SHA256:abc123",
+		is_git_related: false,
+		created_at: "2024-01-01T00:00:00Z",
+		updated_at: "2024-06-15T00:00:00Z",
+	};
+
+	it("extracts summary fields", () => {
+		const summary = toPrivateKeySummary(key);
+		expect(summary.uuid).toBe("pk-001");
+		expect(summary.name).toBe("production-key");
+		expect(summary.description).toBe("SSH key for prod");
+		expect(summary.fingerprint).toBe("SHA256:abc123");
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toPrivateKeySummary(key);
+		expect("id" in summary).toBe(false);
+		expect("is_git_related" in summary).toBe(false);
 		expect("created_at" in summary).toBe(false);
 		expect("updated_at" in summary).toBe(false);
 	});

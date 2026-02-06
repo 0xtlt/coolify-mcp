@@ -151,6 +151,26 @@ export interface EnvironmentSummary {
 	name: string;
 }
 
+// --- Phase 4 types ---
+
+export interface PrivateKey {
+	id: number;
+	uuid: string;
+	name: string;
+	description?: string;
+	fingerprint?: string;
+	is_git_related?: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface PrivateKeySummary {
+	uuid: string;
+	name: string;
+	description?: string;
+	fingerprint?: string;
+}
+
 // --- Phase 3 types ---
 
 export interface Team {
@@ -236,6 +256,15 @@ export function toEnvironmentSummary(e: Environment): EnvironmentSummary {
 	return {
 		uuid: e.uuid,
 		name: e.name,
+	};
+}
+
+export function toPrivateKeySummary(key: PrivateKey): PrivateKeySummary {
+	return {
+		uuid: key.uuid,
+		name: key.name,
+		description: key.description,
+		fingerprint: key.fingerprint,
 	};
 }
 
