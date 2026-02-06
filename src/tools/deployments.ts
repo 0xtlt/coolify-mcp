@@ -85,11 +85,15 @@ export function registerDeploymentTools(server: McpServer, client: CoolifyClient
 		async ({ uuid, force }) => {
 			try {
 				const result = await client.triggerDeploy(uuid, force);
+				const deployments = result.deployments ?? [];
+				const summary = deployments
+					.map((d) => `${d.resource_uuid}: ${d.message} (deployment: ${d.deployment_uuid})`)
+					.join("\n");
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Deployment triggered for ${uuid}. ${result.message}${result.deployment_uuid ? ` Deployment UUID: ${result.deployment_uuid}` : ""}`,
+							text: summary || `Deployment triggered for ${uuid}.`,
 						},
 					],
 				};

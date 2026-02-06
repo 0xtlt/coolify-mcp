@@ -19,17 +19,18 @@ export class CoolifyApiError extends CoolifyMcpError {
 	}
 
 	toUserMessage(): string {
+		const detail = this.responseBody ? ` Response: ${this.responseBody}` : "";
 		switch (this.statusCode) {
 			case 401:
-				return "Authentication failed. Check your COOLIFY_TOKEN.";
+				return `Authentication failed. Check your COOLIFY_TOKEN.${detail}`;
 			case 403:
-				return "Access denied. Insufficient permissions.";
+				return `Access denied. Insufficient permissions.${detail}`;
 			case 404:
-				return "Resource not found. Check the ID provided.";
+				return `Resource not found. Check the ID provided.${detail}`;
 			case 429:
-				return "Rate limit exceeded. Try again later.";
+				return `Rate limit exceeded. Try again later.${detail}`;
 			default:
-				return `API error (${this.statusCode}): ${this.message}`;
+				return `API error (${this.statusCode}): ${this.message}${detail}`;
 		}
 	}
 }

@@ -93,11 +93,10 @@ export class CoolifyClient {
 	async triggerDeploy(
 		uuid: string,
 		force = false,
-	): Promise<{ message: string; deployment_uuid?: string }> {
-		const endpoint = force
-			? `/applications/${uuid}/deploy?force=true`
-			: `/applications/${uuid}/deploy`;
-		return this.request("POST", endpoint);
+	): Promise<{ deployments: Array<{ message: string; resource_uuid: string; deployment_uuid: string }> }> {
+		const params = new URLSearchParams({ uuid });
+		if (force) params.set("force", "true");
+		return this.request("GET", `/deploy?${params.toString()}`);
 	}
 
 	// Logs
