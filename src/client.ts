@@ -90,8 +90,8 @@ export class CoolifyClient {
 		return this.request("POST", `/applications/${uuid}/restart`);
 	}
 
-	async updateApplication(uuid: string, data: Record<string, unknown>): Promise<Application> {
-		return this.request<Application>("PATCH", `/applications/${uuid}`, data);
+	async updateApplication(uuid: string, data: Record<string, unknown>): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("PATCH", `/applications/${uuid}`, data);
 	}
 
 	async deleteApplication(

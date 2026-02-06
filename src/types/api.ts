@@ -138,6 +138,7 @@ export interface ProjectSummary {
 
 export interface Environment {
 	id: number;
+	uuid: string;
 	name: string;
 	project_id: number;
 	description?: string;
@@ -146,9 +147,8 @@ export interface Environment {
 }
 
 export interface EnvironmentSummary {
+	uuid: string;
 	name: string;
-	project_id: number;
-	description?: string;
 }
 
 // Transformer functions
@@ -210,8 +210,7 @@ export function toProjectSummary(p: Project): ProjectSummary {
 
 export function toEnvironmentSummary(e: Environment): EnvironmentSummary {
 	return {
+		uuid: e.uuid,
 		name: e.name,
-		project_id: e.project_id,
-		description: e.description,
 	};
 }

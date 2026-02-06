@@ -184,6 +184,7 @@ describe("toProjectSummary", () => {
 describe("toEnvironmentSummary", () => {
 	const env: Environment = {
 		id: 1,
+		uuid: "env-uuid-123",
 		name: "production",
 		project_id: 5,
 		description: "Prod env",
@@ -193,9 +194,8 @@ describe("toEnvironmentSummary", () => {
 
 	it("extracts summary fields", () => {
 		const summary = toEnvironmentSummary(env);
+		expect(summary.uuid).toBe("env-uuid-123");
 		expect(summary.name).toBe("production");
-		expect(summary.project_id).toBe(5);
-		expect(summary.description).toBe("Prod env");
 	});
 
 	it("excludes detail fields", () => {

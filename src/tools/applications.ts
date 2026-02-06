@@ -147,8 +147,8 @@ export function registerApplicationTools(server: McpServer, client: CoolifyClien
 						if (v !== undefined) data[k] = v;
 					}
 					if (custom_fields) Object.assign(data, custom_fields);
-					const result = await client.updateApplication(uuid, data);
-					return { message: `Application ${uuid} updated`, name: result.name };
+					await client.updateApplication(uuid, data);
+					return `Application ${uuid} updated`;
 				});
 			},
 		);

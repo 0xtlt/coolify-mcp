@@ -165,8 +165,8 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 						if (v !== undefined) data[k] = v;
 					}
 					if (custom_fields) Object.assign(data, custom_fields);
-					const result = await client.updateDatabase(uuid, data);
-					return { message: `Database ${uuid} updated`, name: result.name };
+					await client.updateDatabase(uuid, data);
+					return `Database ${uuid} updated`;
 				});
 			},
 		);
