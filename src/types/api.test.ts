@@ -3,11 +3,15 @@ import {
 	type Application,
 	type Database,
 	type Deployment,
+	type Environment,
+	type Project,
 	type ServerInfo,
 	type Service,
 	toApplicationSummary,
 	toDatabaseSummary,
 	toDeploymentSummary,
+	toEnvironmentSummary,
+	toProjectSummary,
 	toServerSummary,
 	toServiceSummary,
 } from "./api";
@@ -153,5 +157,51 @@ describe("toServiceSummary", () => {
 		expect("destination_id" in summary).toBe(false);
 		expect("environment_id" in summary).toBe(false);
 		expect("created_at" in summary).toBe(false);
+	});
+});
+
+describe("toProjectSummary", () => {
+	const proj: Project = {
+		id: 1,
+		uuid: "proj-001",
+		name: "my-project",
+		description: "A project",
+	};
+
+	it("extracts summary fields", () => {
+		const summary = toProjectSummary(proj);
+		expect(summary.uuid).toBe("proj-001");
+		expect(summary.name).toBe("my-project");
+		expect(summary.description).toBe("A project");
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toProjectSummary(proj);
+		expect("id" in summary).toBe(false);
+	});
+});
+
+describe("toEnvironmentSummary", () => {
+	const env: Environment = {
+		id: 1,
+		name: "production",
+		project_id: 5,
+		description: "Prod env",
+		created_at: "2024-01-01T00:00:00Z",
+		updated_at: "2024-06-15T00:00:00Z",
+	};
+
+	it("extracts summary fields", () => {
+		const summary = toEnvironmentSummary(env);
+		expect(summary.name).toBe("production");
+		expect(summary.project_id).toBe(5);
+		expect(summary.description).toBe("Prod env");
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toEnvironmentSummary(env);
+		expect("id" in summary).toBe(false);
+		expect("created_at" in summary).toBe(false);
+		expect("updated_at" in summary).toBe(false);
 	});
 });

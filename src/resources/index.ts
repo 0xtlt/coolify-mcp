@@ -5,6 +5,7 @@ import {
 	toApplicationSummary,
 	toDatabaseSummary,
 	toDeploymentSummary,
+	toProjectSummary,
 	toServerSummary,
 	toServiceSummary,
 } from "../types/api";
@@ -135,6 +136,31 @@ export function registerResources(server: McpServer, client: CoolifyClient) {
 				contents: [
 					{
 						uri: "coolify://servers",
+						mimeType: "text/plain",
+						text: formatError(error),
+					},
+				],
+			};
+		}
+	});
+
+	server.resource("coolify://projects", "List of all Coolify projects (summary)", async () => {
+		try {
+			const projects = await client.listProjects();
+			return {
+				contents: [
+					{
+						uri: "coolify://projects",
+						mimeType: "application/json",
+						text: JSON.stringify(projects.map(toProjectSummary), null, 2),
+					},
+				],
+			};
+		} catch (error) {
+			return {
+				contents: [
+					{
+						uri: "coolify://projects",
 						mimeType: "text/plain",
 						text: formatError(error),
 					},

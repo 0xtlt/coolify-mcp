@@ -60,4 +60,20 @@ export function registerDeploymentTools(server: McpServer, client: CoolifyClient
 			},
 		);
 	}
+
+	if (isToolAllowed("coolify_cancel_deployment", config)) {
+		server.tool(
+			"coolify_cancel_deployment",
+			"[WRITE] Cancel a running or queued deployment",
+			{ uuid: schemas.uuid.describe("UUID of the deployment to cancel") },
+			async ({ uuid }) => {
+				if (!isToolAllowed("coolify_cancel_deployment", config))
+					return readonlyError("coolify_cancel_deployment");
+				return wrap(async () => {
+					const result = await client.cancelDeployment(uuid);
+					return result.message || `Deployment ${uuid} cancelled`;
+				});
+			},
+		);
+	}
 }

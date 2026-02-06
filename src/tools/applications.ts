@@ -1,4 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import type { CoolifyClient } from "../client";
 import type { Config } from "../config";
 import { checkConfirmation, isToolAllowed, readonlyError } from "../lib/safety";
@@ -19,7 +20,11 @@ function getApplicationActions(uuid: string, status?: string): ResponseAction[] 
 	} else if (status === "exited" || status?.startsWith("exited:")) {
 		actions.push({ tool: "coolify_start_application", args: { uuid }, hint: "Start" });
 	}
-	actions.push({ tool: "coolify_trigger_deploy", args: { uuid }, hint: "Deploy" });
+	actions.push(
+		{ tool: "coolify_update_application", args: { uuid }, hint: "Update config" },
+		{ tool: "coolify_trigger_deploy", args: { uuid }, hint: "Deploy" },
+		{ tool: "coolify_delete_application", args: { uuid }, hint: "Delete" },
+	);
 	return actions;
 }
 
@@ -98,6 +103,79 @@ export function registerApplicationTools(server: McpServer, client: CoolifyClien
 				return wrap(async () => {
 					const result = await client.restartApplication(uuid);
 					return result.message || `Application ${uuid} restart command sent`;
+				});
+			},
+		);
+	}
+
+	// Write: update
+	if (isToolAllowed("coolify_update_application", config)) {
+		server.tool(
+			"coolify_update_application",
+			"[WRITE] Update configuration of a Coolify application",
+			{
+				uuid: schemas.uuid,
+				name: z.string().optional().describe("Application name"),
+				description: z.string().optional().describe("Application description"),
+				fqdn: z.string().optional().describe("Fully qualified domain name(s)"),
+				git_repository: z.string().optional().describe("Git repository URL"),
+				git_branch: z.string().optional().describe("Git branch"),
+				build_pack: z
+					.string()
+					.optional()
+					.describe("Build pack (dockerfile, nixpacks, static, dockercompose, dockerimage)"),
+				install_command: z.string().optional().describe("Install command (e.g. npm install)"),
+				build_command: z.string().optional().describe("Build command (e.g. npm run build)"),
+				start_command: z.string().optional().describe("Start command (e.g. npm start)"),
+				ports_exposes: z.string().optional().describe("Exposed ports (e.g. 3000,8080)"),
+				base_directory: z.string().optional().describe("Base directory in repo"),
+				publish_directory: z.string().optional().describe("Publish directory for static builds"),
+				is_static: z.boolean().optional().describe("Serve as static site"),
+				is_auto_deploy_enabled: z.boolean().optional().describe("Auto-deploy on push"),
+				instant_deploy: z.boolean().optional().describe("Deploy immediately after update"),
+				custom_fields: z
+					.record(z.string(), z.unknown())
+					.optional()
+					.describe("Additional fields not listed above (advanced)"),
+			},
+			async ({ uuid, custom_fields, ...fields }) => {
+				if (!isToolAllowed("coolify_update_application", config))
+					return readonlyError("coolify_update_application");
+				return wrap(async () => {
+					const data: Record<string, unknown> = {};
+					for (const [k, v] of Object.entries(fields)) {
+						if (v !== undefined) data[k] = v;
+					}
+					if (custom_fields) Object.assign(data, custom_fields);
+					const result = await client.updateApplication(uuid, data);
+					return { message: `Application ${uuid} updated`, name: result.name };
+				});
+			},
+		);
+	}
+
+	// Destructive: delete
+	if (isToolAllowed("coolify_delete_application", config)) {
+		server.tool(
+			"coolify_delete_application",
+			"[DESTRUCTIVE] Permanently delete a Coolify application",
+			{
+				uuid: schemas.uuid,
+				confirm: schemas.confirm,
+				delete_volumes: z.boolean().default(true).describe("Also delete associated volumes"),
+				docker_cleanup: z.boolean().default(true).describe("Clean up Docker resources"),
+			},
+			async ({ uuid, confirm, delete_volumes, docker_cleanup }) => {
+				if (!isToolAllowed("coolify_delete_application", config))
+					return readonlyError("coolify_delete_application");
+				const check = checkConfirmation("coolify_delete_application", { uuid, confirm }, config);
+				if (!check.proceed) return check.response!;
+				return wrap(async () => {
+					const result = await client.deleteApplication(uuid, {
+						delete_volumes,
+						docker_cleanup,
+					});
+					return result.message || `Application ${uuid} deleted`;
 				});
 			},
 		);

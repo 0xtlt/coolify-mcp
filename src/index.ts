@@ -9,6 +9,7 @@ import { registerDatabaseTools } from "./tools/databases";
 import { registerDeploymentTools } from "./tools/deployments";
 import { registerEnvTools } from "./tools/envs";
 import { registerLogTools } from "./tools/logs";
+import { registerProjectTools } from "./tools/projects";
 import { registerServerTools } from "./tools/servers";
 import { registerServiceTools } from "./tools/services";
 
@@ -19,7 +20,7 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "1.2.0",
+			version: "1.3.0",
 		},
 		{
 			instructions: `Coolify MCP server for managing self-hosted PaaS instances.
@@ -40,8 +41,11 @@ async function main() {
 3. **Restart app**: get_application (verify uuid) → restart_application
 4. **Manage databases**: list_databases → get_database → list_database_backups
 5. **Manage services**: list_services → get_service (follow _actions for start/stop/restart)
-6. **Server overview**: get_server_resources → get_server_domains
-7. **Environment variables**: list_envs → create_env / update_envs_bulk / delete_env`,
+6. **Server overview**: list_servers → get_server → validate / get_resources / get_domains
+7. **Environment variables**: list_envs → create_env / update_envs_bulk / delete_env
+8. **Projects & Environments**: list_projects → get_project → list_environments → get_environment
+9. **Update application**: get_application → update_application (modify fields)
+10. **Cancel deployment**: list_deployments (status=in_progress) → cancel_deployment`,
 		},
 	);
 
@@ -51,6 +55,7 @@ async function main() {
 	registerDeploymentTools(server, client, config);
 	registerEnvTools(server, client, config);
 	registerLogTools(server, client, config);
+	registerProjectTools(server, client, config);
 	registerServerTools(server, client, config);
 	registerServiceTools(server, client, config);
 

@@ -14,7 +14,12 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	coolify_get_application: { level: "read" },
 	// Applications - write
 	coolify_start_application: { level: "write" },
+	coolify_update_application: { level: "write" },
 	// Applications - destructive
+	coolify_delete_application: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the application and optionally its volumes.",
+	},
 	coolify_stop_application: {
 		level: "destructive",
 		dangerWarning: "Stops the application, making it unavailable until restarted.",
@@ -28,13 +33,25 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	coolify_get_deployment: { level: "read" },
 	// Deployments - write
 	coolify_trigger_deploy: { level: "write" },
+	coolify_cancel_deployment: { level: "write" },
 	// Logs - read
 	coolify_get_logs: { level: "read" },
 	// Databases - read
 	coolify_list_databases: { level: "read" },
 	coolify_get_database: { level: "read" },
 	coolify_list_database_backups: { level: "read" },
+	// Databases - write
+	coolify_start_database: { level: "write" },
+	coolify_update_database: { level: "write" },
 	// Databases - destructive
+	coolify_stop_database: {
+		level: "destructive",
+		dangerWarning: "Stops the database, making it unavailable until restarted.",
+	},
+	coolify_restart_database: {
+		level: "destructive",
+		dangerWarning: "Restarts the database, causing brief downtime.",
+	},
 	coolify_delete_database: {
 		level: "destructive",
 		dangerWarning: "Permanently deletes the database and optionally its volumes.",
@@ -58,9 +75,16 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 		dangerWarning: "Permanently deletes the service and optionally its volumes.",
 	},
 	// Servers - read
+	coolify_list_servers: { level: "read" },
+	coolify_get_server: { level: "read" },
 	coolify_validate_server: { level: "read" },
 	coolify_get_server_resources: { level: "read" },
 	coolify_get_server_domains: { level: "read" },
+	// Projects & Environments - read
+	coolify_list_projects: { level: "read" },
+	coolify_get_project: { level: "read" },
+	coolify_list_environments: { level: "read" },
+	coolify_get_environment: { level: "read" },
 	// Environment variables - read
 	coolify_list_envs: { level: "read" },
 	// Environment variables - write

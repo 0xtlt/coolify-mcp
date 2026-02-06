@@ -121,6 +121,36 @@ export interface EnvironmentVariable {
 	is_shown_once: boolean;
 }
 
+// --- Phase 2 types ---
+
+export interface Project {
+	id: number;
+	uuid: string;
+	name: string;
+	description?: string;
+}
+
+export interface ProjectSummary {
+	uuid: string;
+	name: string;
+	description?: string;
+}
+
+export interface Environment {
+	id: number;
+	name: string;
+	project_id: number;
+	description?: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface EnvironmentSummary {
+	name: string;
+	project_id: number;
+	description?: string;
+}
+
 // Transformer functions
 
 export function toApplicationSummary(app: Application): ApplicationSummary {
@@ -167,5 +197,21 @@ export function toServiceSummary(svc: Service): ServiceSummary {
 		name: svc.name,
 		status: svc.status,
 		service_type: svc.service_type,
+	};
+}
+
+export function toProjectSummary(p: Project): ProjectSummary {
+	return {
+		uuid: p.uuid,
+		name: p.name,
+		description: p.description,
+	};
+}
+
+export function toEnvironmentSummary(e: Environment): EnvironmentSummary {
+	return {
+		name: e.name,
+		project_id: e.project_id,
+		description: e.description,
 	};
 }

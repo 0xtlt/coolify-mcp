@@ -11,9 +11,15 @@ import { toDatabaseSummary } from "../types/api";
 function getDatabaseActions(uuid: string, status?: string): ResponseAction[] {
 	const actions: ResponseAction[] = [
 		{ tool: "coolify_list_database_backups", args: { uuid }, hint: "View backups" },
+		{ tool: "coolify_update_database", args: { uuid }, hint: "Update config" },
 	];
 	if (status === "running" || status?.startsWith("running:")) {
-		actions.push({ tool: "coolify_trigger_deploy", args: { uuid }, hint: "Deploy" });
+		actions.push(
+			{ tool: "coolify_restart_database", args: { uuid }, hint: "Restart" },
+			{ tool: "coolify_stop_database", args: { uuid }, hint: "Stop" },
+		);
+	} else if (status === "exited" || status?.startsWith("exited:")) {
+		actions.push({ tool: "coolify_start_database", args: { uuid }, hint: "Start" });
 	}
 	actions.push({ tool: "coolify_delete_database", args: { uuid }, hint: "Delete" });
 	return actions;
@@ -71,6 +77,96 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 				return wrap(async () => {
 					const result = await client.deleteDatabase(uuid, { delete_volumes, docker_cleanup });
 					return result.message || `Database ${uuid} deleted`;
+				});
+			},
+		);
+	}
+
+	// Write: start
+	if (isToolAllowed("coolify_start_database", config)) {
+		server.tool(
+			"coolify_start_database",
+			"[WRITE] Start a stopped Coolify database",
+			{ uuid: schemas.uuid },
+			async ({ uuid }) => {
+				if (!isToolAllowed("coolify_start_database", config))
+					return readonlyError("coolify_start_database");
+				return wrap(async () => {
+					const result = await client.startDatabase(uuid);
+					return result.message || `Database ${uuid} start command sent`;
+				});
+			},
+		);
+	}
+
+	// Destructive: stop
+	if (isToolAllowed("coolify_stop_database", config)) {
+		server.tool(
+			"coolify_stop_database",
+			"[DESTRUCTIVE] Stop a running Coolify database. Causes downtime.",
+			{ uuid: schemas.uuid, confirm: schemas.confirm },
+			async ({ uuid, confirm }) => {
+				if (!isToolAllowed("coolify_stop_database", config))
+					return readonlyError("coolify_stop_database");
+				const check = checkConfirmation("coolify_stop_database", { uuid, confirm }, config);
+				if (!check.proceed) return check.response!;
+				return wrap(async () => {
+					const result = await client.stopDatabase(uuid);
+					return result.message || `Database ${uuid} stop command sent`;
+				});
+			},
+		);
+	}
+
+	// Destructive: restart
+	if (isToolAllowed("coolify_restart_database", config)) {
+		server.tool(
+			"coolify_restart_database",
+			"[DESTRUCTIVE] Restart a Coolify database. Causes brief downtime.",
+			{ uuid: schemas.uuid, confirm: schemas.confirm },
+			async ({ uuid, confirm }) => {
+				if (!isToolAllowed("coolify_restart_database", config))
+					return readonlyError("coolify_restart_database");
+				const check = checkConfirmation("coolify_restart_database", { uuid, confirm }, config);
+				if (!check.proceed) return check.response!;
+				return wrap(async () => {
+					const result = await client.restartDatabase(uuid);
+					return result.message || `Database ${uuid} restart command sent`;
+				});
+			},
+		);
+	}
+
+	// Write: update
+	if (isToolAllowed("coolify_update_database", config)) {
+		server.tool(
+			"coolify_update_database",
+			"[WRITE] Update configuration of a Coolify database",
+			{
+				uuid: schemas.uuid,
+				name: z.string().optional().describe("Database name"),
+				description: z.string().optional().describe("Database description"),
+				image: z.string().optional().describe("Docker image (e.g. postgres:16-alpine)"),
+				is_public: z.boolean().optional().describe("Make database publicly accessible"),
+				public_port: z.number().optional().describe("Public port number"),
+				limits_memory: z.string().optional().describe("Memory limit (e.g. 512m, 1g)"),
+				limits_cpus: z.string().optional().describe("CPU limit (e.g. 0.5, 2)"),
+				custom_fields: z
+					.record(z.string(), z.unknown())
+					.optional()
+					.describe("Additional fields not listed above (advanced)"),
+			},
+			async ({ uuid, custom_fields, ...fields }) => {
+				if (!isToolAllowed("coolify_update_database", config))
+					return readonlyError("coolify_update_database");
+				return wrap(async () => {
+					const data: Record<string, unknown> = {};
+					for (const [k, v] of Object.entries(fields)) {
+						if (v !== undefined) data[k] = v;
+					}
+					if (custom_fields) Object.assign(data, custom_fields);
+					const result = await client.updateDatabase(uuid, data);
+					return { message: `Database ${uuid} updated`, name: result.name };
 				});
 			},
 		);
