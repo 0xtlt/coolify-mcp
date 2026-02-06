@@ -2,7 +2,7 @@
 
 MCP server for managing Coolify instances. Control applications, databases, services, servers, and more directly from Claude or any MCP-compatible client.
 
-**75 tools | 7 resources | 4 prompts**
+**74 tools | 7 resources | 4 prompts**
 
 ## Installation
 
@@ -144,11 +144,12 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_create_environment` | [WRITE] Create an environment |
 | `coolify_delete_environment` | [DESTRUCTIVE] Delete an environment |
 
-### Deployments (4)
+### Deployments (5)
 
 | Tool | Description |
 |------|-------------|
-| `coolify_list_deployments` | List deployments |
+| `coolify_list_deployments` | List currently running/queued deployments |
+| `coolify_list_application_deployments` | List deployment history for an application (with pagination) |
 | `coolify_get_deployment` | Get deployment details |
 | `coolify_trigger_deploy` | [WRITE] Trigger a deployment |
 | `coolify_cancel_deployment` | [WRITE] Cancel a running deployment |
@@ -187,13 +188,6 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_get_logs` | Get application logs with filtering |
 | `coolify_get_database_logs` | Get database logs with filtering |
 | `coolify_get_service_logs` | Get service logs with filtering |
-
-### Execute Command (2)
-
-| Tool | Description |
-|------|-------------|
-| `coolify_execute_command_application` | [WRITE] Execute command in application container |
-| `coolify_execute_command_server` | [WRITE] Execute command on server via SSH |
 
 ### System (2)
 

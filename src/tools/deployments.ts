@@ -10,21 +10,33 @@ import { toDeploymentSummary } from "../types/api";
 export function registerDeploymentTools(server: McpServer, client: CoolifyClient, config: Config) {
 	server.tool(
 		"coolify_list_deployments",
-		"List active deployments (returns summary: deployment_uuid, status, commit, created_at)",
+		"List currently running/queued deployments only (returns summary). For deployment history, use coolify_list_application_deployments instead.",
 		{
-			status: z
-				.enum(["queued", "in_progress", "finished", "failed", "cancelled-by-user"])
-				.optional()
-				.describe("Filter by deployment status"),
 			limit: z.number().min(1).max(100).default(20).describe("Max results to return"),
 		},
-		async ({ status, limit }) => {
+		async ({ limit }) => {
 			return wrap(async () => {
-				let deployments = await client.listDeployments();
-				if (status) {
-					deployments = deployments.filter((d) => d.status === status);
-				}
+				const deployments = await client.listDeployments();
 				return deployments.slice(0, limit).map(toDeploymentSummary);
+			});
+		},
+	);
+
+	server.tool(
+		"coolify_list_application_deployments",
+		"List deployment history for a specific application (all statuses: finished, failed, queued, in_progress, cancelled). Supports pagination.",
+		{
+			uuid: schemas.uuid.describe("UUID of the application"),
+			skip: z.number().min(0).default(0).describe("Number of records to skip (pagination)"),
+			take: z.number().min(1).max(100).default(10).describe("Number of records to return"),
+		},
+		async ({ uuid, skip, take }) => {
+			return wrap(async () => {
+				const result = await client.listApplicationDeployments(uuid, skip, take);
+				return {
+					count: result.count,
+					deployments: result.deployments.map(toDeploymentSummary),
+				};
 			});
 		},
 	);

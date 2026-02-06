@@ -263,23 +263,14 @@ describe("CoolifyClient", () => {
 		expect(url).toContain("/services/svc-1/logs?lines=300");
 	});
 
-	// Phase 5: Execute command
-	it("uses POST for executeCommandApplication", async () => {
-		mockFetch(new Response('{"result":"ok"}', { status: 200 }));
-		await client.executeCommandApplication("app-1", "ls -la");
-		const [url, options] = fetchCalls[0];
-		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/execute-command");
-		expect(options.method).toBe("POST");
-		expect(JSON.parse(options.body as string)).toEqual({ command: "ls -la" });
-	});
-
-	it("uses POST for executeCommandServer", async () => {
-		mockFetch(new Response('{"result":"ok"}', { status: 200 }));
-		await client.executeCommandServer("srv-1", "uptime");
-		const [url, options] = fetchCalls[0];
-		expect(url).toBe("https://coolify.example.com/api/v1/servers/srv-1/execute-command");
-		expect(options.method).toBe("POST");
-		expect(JSON.parse(options.body as string)).toEqual({ command: "uptime" });
+	// Deployment history
+	it("constructs correct URL for listApplicationDeployments with pagination", async () => {
+		mockFetch(new Response('{"count":5,"deployments":[]}', { status: 200 }));
+		await client.listApplicationDeployments("app-1", 10, 20);
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/deployments/applications/app-1?skip=10&take=20",
+		);
 	});
 
 	// Phase 5: Backup management

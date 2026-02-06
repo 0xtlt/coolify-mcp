@@ -10,7 +10,6 @@ import { registerDatabaseEnvTools } from "./tools/database-envs";
 import { registerDatabaseTools } from "./tools/databases";
 import { registerDeploymentTools } from "./tools/deployments";
 import { registerEnvTools } from "./tools/envs";
-import { registerExecuteTools } from "./tools/execute";
 import { registerLogTools } from "./tools/logs";
 import { registerPrivateKeyTools } from "./tools/private-keys";
 import { registerProjectTools } from "./tools/projects";
@@ -27,7 +26,7 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "2.2.1",
+			version: "2.3.0",
 		},
 		{
 			instructions: `Coolify MCP server for managing self-hosted PaaS instances.
@@ -44,7 +43,7 @@ async function main() {
 
 ## Common workflows
 1. **Check app status**: list_applications → get_application (follow _actions)
-2. **Debug failing deploy**: list_deployments (status=failed) → get_logs with search
+2. **Debug failing deploy**: list_application_deployments (check failed) → get_logs with search
 3. **Restart app**: get_application (verify uuid) → restart_application
 4. **Manage databases**: list_databases → get_database → list_database_backups
 5. **Manage services**: list_services → get_service (follow _actions for start/stop/restart)
@@ -52,7 +51,7 @@ async function main() {
 7. **Environment variables**: list_envs → create_env / update_envs_bulk / delete_env
 8. **Projects & Environments**: list_projects → get_project → list_environments → get_environment
 9. **Update application**: get_application → update_application (modify fields)
-10. **Cancel deployment**: list_deployments (status=in_progress) → cancel_deployment
+10. **Cancel deployment**: list_deployments (active only) → cancel_deployment
 11. **Create application**: list_servers → list_projects → create_application (source_type + params)
 12. **Create database**: list_servers → list_projects → create_database (type + params)
 13. **Create service**: list_servers → list_projects → create_service (type + params)
@@ -64,8 +63,8 @@ async function main() {
 19. **Service env vars**: list_service_envs → create_service_env / update_service_envs_bulk / delete_service_env
 20. **Database env vars**: list_database_envs → create_database_env / update_database_envs_bulk / delete_database_env
 21. **Database/service logs**: get_database_logs / get_service_logs (same filters as get_logs)
-22. **Execute command**: execute_command_application / execute_command_server (run shell commands)
-23. **Backup management**: list_database_backups → create_database_backup / delete_database_backup`,
+22. **Backup management**: list_database_backups → create_database_backup / delete_database_backup
+23. **Deployment history**: list_application_deployments (by app UUID, with pagination)`,
 		},
 	);
 
@@ -75,7 +74,6 @@ async function main() {
 	registerDatabaseEnvTools(server, client, config);
 	registerDeploymentTools(server, client, config);
 	registerEnvTools(server, client, config);
-	registerExecuteTools(server, client, config);
 	registerLogTools(server, client, config);
 	registerProjectTools(server, client, config);
 	registerPrivateKeyTools(server, client, config);

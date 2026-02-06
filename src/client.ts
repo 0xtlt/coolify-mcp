@@ -119,6 +119,14 @@ export class CoolifyClient {
 		return this.request<Deployment[]>("GET", "/deployments");
 	}
 
+	async listApplicationDeployments(
+		uuid: string,
+		skip = 0,
+		take = 10,
+	): Promise<{ count: number; deployments: Deployment[] }> {
+		return this.request("GET", `/deployments/applications/${uuid}?skip=${skip}&take=${take}`);
+	}
+
 	async getDeployment(uuid: string): Promise<Deployment> {
 		return this.request<Deployment>("GET", `/deployments/${uuid}`);
 	}
@@ -472,15 +480,6 @@ export class CoolifyClient {
 
 	async deletePrivateKey(uuid: string): Promise<{ message: string }> {
 		return this.request("DELETE", `/security/keys/${uuid}`);
-	}
-
-	// Execute Command
-	async executeCommandApplication(uuid: string, command: string): Promise<{ result: string }> {
-		return this.request("POST", `/applications/${uuid}/execute-command`, { command });
-	}
-
-	async executeCommandServer(uuid: string, command: string): Promise<{ result: string }> {
-		return this.request("POST", `/servers/${uuid}/execute-command`, { command });
 	}
 
 	// System

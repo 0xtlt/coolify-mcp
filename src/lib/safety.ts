@@ -30,6 +30,7 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	},
 	// Deployments - read
 	coolify_list_deployments: { level: "read" },
+	coolify_list_application_deployments: { level: "read" },
 	coolify_get_deployment: { level: "read" },
 	// Deployments - write
 	coolify_trigger_deploy: { level: "write" },
@@ -144,9 +145,6 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	// Phase 5: Logs - read
 	coolify_get_database_logs: { level: "read" },
 	coolify_get_service_logs: { level: "read" },
-	// Phase 5: Execute command - write
-	coolify_execute_command_application: { level: "write" },
-	coolify_execute_command_server: { level: "write" },
 	// Phase 5: Backup management - write
 	coolify_create_database_backup: { level: "write" },
 	// Phase 5: Backup management - destructive

@@ -80,10 +80,9 @@ describe("isToolAllowed", () => {
 		expect(isToolAllowed("coolify_list_database_envs", config)).toBe(true);
 	});
 
-	it("blocks execute command tools in readonly mode", () => {
+	it("allows application deployments read in readonly mode", () => {
 		const config = { ...baseConfig, readonly: true };
-		expect(isToolAllowed("coolify_execute_command_application", config)).toBe(false);
-		expect(isToolAllowed("coolify_execute_command_server", config)).toBe(false);
+		expect(isToolAllowed("coolify_list_application_deployments", config)).toBe(true);
 	});
 
 	it("allows database/service log read in readonly mode", () => {
@@ -146,14 +145,6 @@ describe("checkConfirmation", () => {
 		);
 		expect(result.proceed).toBe(false);
 		expect(result.response).toBeDefined();
-	});
-
-	it("does not require confirmation for execute commands (write level)", () => {
-		const config = { ...baseConfig, requireConfirm: true };
-		const r1 = checkConfirmation("coolify_execute_command_application", { uuid: "a" }, config);
-		const r2 = checkConfirmation("coolify_execute_command_server", { uuid: "s" }, config);
-		expect(r1.proceed).toBe(true);
-		expect(r2.proceed).toBe(true);
 	});
 
 	it("does not require confirmation for create_database_backup (write level)", () => {
