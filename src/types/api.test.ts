@@ -1,11 +1,15 @@
 import { describe, expect, it } from "bun:test";
 import {
 	type Application,
+	type Database,
 	type Deployment,
 	type ServerInfo,
+	type Service,
 	toApplicationSummary,
+	toDatabaseSummary,
 	toDeploymentSummary,
 	toServerSummary,
+	toServiceSummary,
 } from "./api";
 
 describe("toApplicationSummary", () => {
@@ -92,6 +96,62 @@ describe("toServerSummary", () => {
 		expect("id" in summary).toBe(false);
 		expect("user" in summary).toBe(false);
 		expect("port" in summary).toBe(false);
+		expect("created_at" in summary).toBe(false);
+	});
+});
+
+describe("toDatabaseSummary", () => {
+	const db: Database = {
+		uuid: "db-001",
+		name: "prod-postgres",
+		database_type: "standalone-postgresql",
+		status: "running",
+		destination_id: 1,
+		environment_id: 1,
+		created_at: "2024-01-01T00:00:00Z",
+		updated_at: "2024-06-15T00:00:00Z",
+	};
+
+	it("extracts summary fields", () => {
+		const summary = toDatabaseSummary(db);
+		expect(summary.uuid).toBe("db-001");
+		expect(summary.name).toBe("prod-postgres");
+		expect(summary.database_type).toBe("standalone-postgresql");
+		expect(summary.status).toBe("running");
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toDatabaseSummary(db);
+		expect("destination_id" in summary).toBe(false);
+		expect("environment_id" in summary).toBe(false);
+		expect("created_at" in summary).toBe(false);
+	});
+});
+
+describe("toServiceSummary", () => {
+	const svc: Service = {
+		uuid: "svc-001",
+		name: "redis-cache",
+		status: "running",
+		service_type: "redis",
+		destination_id: 1,
+		environment_id: 1,
+		created_at: "2024-01-01T00:00:00Z",
+		updated_at: "2024-06-15T00:00:00Z",
+	};
+
+	it("extracts summary fields", () => {
+		const summary = toServiceSummary(svc);
+		expect(summary.uuid).toBe("svc-001");
+		expect(summary.name).toBe("redis-cache");
+		expect(summary.status).toBe("running");
+		expect(summary.service_type).toBe("redis");
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toServiceSummary(svc);
+		expect("destination_id" in summary).toBe(false);
+		expect("environment_id" in summary).toBe(false);
 		expect("created_at" in summary).toBe(false);
 	});
 });

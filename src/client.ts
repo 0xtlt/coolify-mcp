@@ -1,6 +1,13 @@
 import type { Config } from "./config";
 import { CoolifyApiError, NetworkError } from "./lib/errors";
-import type { Application, Deployment, ServerInfo } from "./types/api";
+import type {
+	Application,
+	Database,
+	Deployment,
+	EnvironmentVariable,
+	ServerInfo,
+	Service,
+} from "./types/api";
 
 export class CoolifyClient {
 	private baseUrl: string;
@@ -113,5 +120,114 @@ export class CoolifyClient {
 
 	async getServer(uuid: string): Promise<ServerInfo> {
 		return this.request<ServerInfo>("GET", `/servers/${uuid}`);
+	}
+
+	async validateServer(uuid: string): Promise<{ message: string }> {
+		return this.request("GET", `/servers/${uuid}/validate`);
+	}
+
+	async getServerResources(uuid: string): Promise<unknown[]> {
+		return this.request("GET", `/servers/${uuid}/resources`);
+	}
+
+	async getServerDomains(uuid: string): Promise<unknown[]> {
+		return this.request("GET", `/servers/${uuid}/domains`);
+	}
+
+	// Databases
+	async listDatabases(): Promise<Database[]> {
+		return this.request<Database[]>("GET", "/databases");
+	}
+
+	async getDatabase(uuid: string): Promise<Database> {
+		return this.request<Database>("GET", `/databases/${uuid}`);
+	}
+
+	async deleteDatabase(
+		uuid: string,
+		opts?: { delete_volumes?: boolean; docker_cleanup?: boolean },
+	): Promise<{ message: string }> {
+		const params = new URLSearchParams();
+		if (opts?.delete_volumes !== undefined)
+			params.set("delete_volumes", String(opts.delete_volumes));
+		if (opts?.docker_cleanup !== undefined)
+			params.set("docker_cleanup", String(opts.docker_cleanup));
+		const qs = params.toString();
+		return this.request("DELETE", `/databases/${uuid}${qs ? `?${qs}` : ""}`);
+	}
+
+	async listDatabaseBackups(uuid: string): Promise<unknown[]> {
+		return this.request("GET", `/databases/${uuid}/backups`);
+	}
+
+	// Services
+	async listServices(): Promise<Service[]> {
+		return this.request<Service[]>("GET", "/services");
+	}
+
+	async getService(uuid: string): Promise<Service> {
+		return this.request<Service>("GET", `/services/${uuid}`);
+	}
+
+	async deleteService(
+		uuid: string,
+		opts?: { delete_volumes?: boolean; docker_cleanup?: boolean },
+	): Promise<{ message: string }> {
+		const params = new URLSearchParams();
+		if (opts?.delete_volumes !== undefined)
+			params.set("delete_volumes", String(opts.delete_volumes));
+		if (opts?.docker_cleanup !== undefined)
+			params.set("docker_cleanup", String(opts.docker_cleanup));
+		const qs = params.toString();
+		return this.request("DELETE", `/services/${uuid}${qs ? `?${qs}` : ""}`);
+	}
+
+	async startService(uuid: string): Promise<{ message: string }> {
+		return this.request("POST", `/services/${uuid}/start`);
+	}
+
+	async stopService(uuid: string): Promise<{ message: string }> {
+		return this.request("POST", `/services/${uuid}/stop`);
+	}
+
+	async restartService(uuid: string): Promise<{ message: string }> {
+		return this.request("POST", `/services/${uuid}/restart`);
+	}
+
+	// Environment Variables
+	async listEnvs(appUuid: string): Promise<EnvironmentVariable[]> {
+		return this.request<EnvironmentVariable[]>("GET", `/applications/${appUuid}/envs`);
+	}
+
+	async createEnv(
+		appUuid: string,
+		data: {
+			key: string;
+			value: string;
+			is_preview?: boolean;
+			is_literal?: boolean;
+			is_multiline?: boolean;
+			is_shown_once?: boolean;
+		},
+	): Promise<{ uuid: string }> {
+		return this.request("POST", `/applications/${appUuid}/envs`, data);
+	}
+
+	async updateEnvsBulk(
+		appUuid: string,
+		envs: Array<{
+			key: string;
+			value: string;
+			is_preview?: boolean;
+			is_literal?: boolean;
+			is_multiline?: boolean;
+			is_shown_once?: boolean;
+		}>,
+	): Promise<EnvironmentVariable[]> {
+		return this.request("PATCH", `/applications/${appUuid}/envs/bulk`, { data: envs });
+	}
+
+	async deleteEnv(appUuid: string, envUuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/applications/${appUuid}/envs/${envUuid}`);
 	}
 }

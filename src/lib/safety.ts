@@ -30,6 +30,47 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	coolify_trigger_deploy: { level: "write" },
 	// Logs - read
 	coolify_get_logs: { level: "read" },
+	// Databases - read
+	coolify_list_databases: { level: "read" },
+	coolify_get_database: { level: "read" },
+	coolify_list_database_backups: { level: "read" },
+	// Databases - destructive
+	coolify_delete_database: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the database and optionally its volumes.",
+	},
+	// Services - read
+	coolify_list_services: { level: "read" },
+	coolify_get_service: { level: "read" },
+	// Services - write
+	coolify_start_service: { level: "write" },
+	// Services - destructive
+	coolify_stop_service: {
+		level: "destructive",
+		dangerWarning: "Stops the service, making it unavailable until restarted.",
+	},
+	coolify_restart_service: {
+		level: "destructive",
+		dangerWarning: "Restarts the service, causing brief downtime.",
+	},
+	coolify_delete_service: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the service and optionally its volumes.",
+	},
+	// Servers - read
+	coolify_validate_server: { level: "read" },
+	coolify_get_server_resources: { level: "read" },
+	coolify_get_server_domains: { level: "read" },
+	// Environment variables - read
+	coolify_list_envs: { level: "read" },
+	// Environment variables - write
+	coolify_create_env: { level: "write" },
+	coolify_update_envs_bulk: { level: "write" },
+	// Environment variables - destructive
+	coolify_delete_env: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the environment variable.",
+	},
 };
 
 export function getToolMeta(name: string): ToolMeta | undefined {

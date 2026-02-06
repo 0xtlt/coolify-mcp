@@ -1,7 +1,13 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CoolifyClient } from "../client";
 import { formatError } from "../lib/wrap";
-import { toApplicationSummary, toDeploymentSummary, toServerSummary } from "../types/api";
+import {
+	toApplicationSummary,
+	toDatabaseSummary,
+	toDeploymentSummary,
+	toServerSummary,
+	toServiceSummary,
+} from "../types/api";
 
 export function registerResources(server: McpServer, client: CoolifyClient) {
 	server.resource(
@@ -61,6 +67,56 @@ export function registerResources(server: McpServer, client: CoolifyClient) {
 			}
 		},
 	);
+
+	server.resource("coolify://databases", "List of all Coolify databases (summary)", async () => {
+		try {
+			const dbs = await client.listDatabases();
+			return {
+				contents: [
+					{
+						uri: "coolify://databases",
+						mimeType: "application/json",
+						text: JSON.stringify(dbs.map(toDatabaseSummary), null, 2),
+					},
+				],
+			};
+		} catch (error) {
+			return {
+				contents: [
+					{
+						uri: "coolify://databases",
+						mimeType: "text/plain",
+						text: formatError(error),
+					},
+				],
+			};
+		}
+	});
+
+	server.resource("coolify://services", "List of all Coolify services (summary)", async () => {
+		try {
+			const services = await client.listServices();
+			return {
+				contents: [
+					{
+						uri: "coolify://services",
+						mimeType: "application/json",
+						text: JSON.stringify(services.map(toServiceSummary), null, 2),
+					},
+				],
+			};
+		} catch (error) {
+			return {
+				contents: [
+					{
+						uri: "coolify://services",
+						mimeType: "text/plain",
+						text: formatError(error),
+					},
+				],
+			};
+		}
+	});
 
 	server.resource("coolify://servers", "List of all Coolify servers (summary)", async () => {
 		try {
