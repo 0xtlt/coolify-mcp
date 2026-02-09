@@ -41,26 +41,34 @@ async function main() {
 		process.exit(1);
 	}
 
-	// Bootstrap: enable API + create token via artisan tinker
+	// Bootstrap: enable API via artisan tinker (retry until InstanceSettings is seeded)
 	console.log("Enabling API via artisan tinker...");
-	const enableApi = Bun.spawn(
-		[
-			"docker",
-			"exec",
-			"coolify-mcp-coolify-1",
-			"php",
-			"artisan",
-			"tinker",
-			"--execute",
-			`$s = \\App\\Models\\InstanceSettings::find(0); $s->is_api_enabled = true; $s->save(); echo 'API_ENABLED';`,
-		],
-		{ stdout: "pipe", stderr: "pipe" },
-	);
-	const enableOut = await new Response(enableApi.stdout).text();
-	if (!enableOut.includes("API_ENABLED")) {
-		console.error("Failed to enable API:", enableOut);
-		const errOut = await new Response(enableApi.stderr).text();
-		console.error(errOut);
+	const enableDeadline = Date.now() + 60_000;
+	let apiEnabled = false;
+	while (Date.now() < enableDeadline) {
+		const enableApi = Bun.spawn(
+			[
+				"docker",
+				"exec",
+				"coolify-mcp-coolify-1",
+				"php",
+				"artisan",
+				"tinker",
+				"--execute",
+				`$s = \\App\\Models\\InstanceSettings::find(0); if(!$s){echo 'NOT_READY';return;} $s->is_api_enabled = true; $s->save(); echo 'API_ENABLED';`,
+			],
+			{ stdout: "pipe", stderr: "pipe" },
+		);
+		const enableOut = await new Response(enableApi.stdout).text();
+		if (enableOut.includes("API_ENABLED")) {
+			apiEnabled = true;
+			break;
+		}
+		console.log("InstanceSettings not ready yet, retrying in 3s...");
+		await Bun.sleep(3_000);
+	}
+	if (!apiEnabled) {
+		console.error("Timed out waiting for InstanceSettings to be seeded");
 		process.exit(1);
 	}
 	console.log("API enabled.");
