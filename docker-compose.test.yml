@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: coolify
+      POSTGRES_USER: coolify
+      POSTGRES_PASSWORD: coolify
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coolify"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - coolify-test-db:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  coolify:
+    image: ghcr.io/coollabsio/coolify:latest
+    ports:
+      - "${COOLIFY_TEST_PORT:-8099}:8080"
+    environment:
+      APP_NAME: "Coolify"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_ID: "test-integration-id-1234567890abcdef"
+      APP_KEY: "base64:MUScccH4Baj16/FXv2FjY0t6U5fse9zivTxus2AC7XI="
+      APP_URL: "http://localhost:8099"
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: coolify
+      DB_USERNAME: coolify
+      DB_PASSWORD: coolify
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      PUSHER_APP_ID: "test-pusher-id"
+      PUSHER_APP_KEY: "test-pusher-key"
+      PUSHER_APP_SECRET: "test-pusher-secret"
+      AUTOUPDATE: "false"
+      SELF_HOSTED: "true"
+      IS_REGISTRATION_ENABLED: "true"
+      ROOT_USERNAME: "admin"
+      ROOT_USER_EMAIL: "test@gmail.com"
+      ROOT_USER_PASSWORD: "Xk9#mPqL2vNw!oRz"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  coolify-test-db:

@@ -33,6 +33,18 @@
 			}
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["src/__integration__/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noNonNullAssertion": "off"
+					}
+				}
+			}
+		}
+	],
 	"files": {
 		"includes": ["src/**/*", "*.ts", "*.json"]
 	}
