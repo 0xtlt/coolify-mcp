@@ -1,12 +1,20 @@
 {
 	"name": "coolify-mcp",
 	"version": "2.3.0",
+	"description": "MCP server for Coolify. Manage applications, databases, services, deployments, and servers from any MCP-compatible client.",
 	"type": "module",
-	"main": "src/index.ts",
+	"main": "dist/index.js",
 	"bin": {
-		"coolify-mcp": "src/index.ts"
+		"coolify-mcp": "dist/index.js"
 	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
 	"scripts": {
+		"build": "bun build src/index.ts --target=node --outdir=dist --format=esm --external=@modelcontextprotocol/sdk --external=zod",
+		"prepublishOnly": "bun run build",
 		"dev": "bun --watch src/index.ts",
 		"start": "bun src/index.ts",
 		"test": "bun test",
@@ -21,6 +29,28 @@
 		"lint": "biome lint --write .",
 		"format": "biome format --write .",
 		"inspect": "bunx @anthropic-ai/mcp-inspector bun -- src/index.ts"
+	},
+	"keywords": [
+		"mcp",
+		"coolify",
+		"paas",
+		"self-hosted",
+		"model-context-protocol",
+		"claude",
+		"ai"
+	],
+	"author": "Thomas Tastet",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/0xtlt/coolify-mcp.git"
+	},
+	"homepage": "https://github.com/0xtlt/coolify-mcp",
+	"bugs": {
+		"url": "https://github.com/0xtlt/coolify-mcp/issues"
+	},
+	"engines": {
+		"node": ">=18"
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.26.0",
