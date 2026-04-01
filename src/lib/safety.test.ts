@@ -248,11 +248,7 @@ describe("checkConfirmation", () => {
 
 	it("requires confirmation for delete_github_app", () => {
 		const config = { ...baseConfig, requireConfirm: true };
-		const result = checkConfirmation(
-			"coolify_delete_github_app",
-			{ id: 42 },
-			config,
-		);
+		const result = checkConfirmation("coolify_delete_github_app", { id: 42 }, config);
 		expect(result.proceed).toBe(false);
 		expect(result.response).toBeDefined();
 	});

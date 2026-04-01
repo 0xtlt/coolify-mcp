@@ -321,18 +321,14 @@ describe("CoolifyClient", () => {
 		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
 		await client.stopDatabase("db-1", { docker_cleanup: false });
 		const [url] = fetchCalls[0];
-		expect(url).toBe(
-			"https://coolify.example.com/api/v1/databases/db-1/stop?docker_cleanup=false",
-		);
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/stop?docker_cleanup=false");
 	});
 
 	it("appends docker_cleanup query param for stopService", async () => {
 		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
 		await client.stopService("svc-1", { docker_cleanup: true });
 		const [url] = fetchCalls[0];
-		expect(url).toBe(
-			"https://coolify.example.com/api/v1/services/svc-1/stop?docker_cleanup=true",
-		);
+		expect(url).toBe("https://coolify.example.com/api/v1/services/svc-1/stop?docker_cleanup=true");
 	});
 
 	// Batch 1: force on server delete
@@ -348,9 +344,7 @@ describe("CoolifyClient", () => {
 		mockFetch(new Response("[]", { status: 200 }));
 		await client.listApplicationScheduledTasks("app-1");
 		const [url] = fetchCalls[0];
-		expect(url).toBe(
-			"https://coolify.example.com/api/v1/applications/app-1/scheduled-tasks",
-		);
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/scheduled-tasks");
 	});
 
 	it("uses POST for createApplicationScheduledTask", async () => {
@@ -361,9 +355,7 @@ describe("CoolifyClient", () => {
 			frequency: "0 * * * *",
 		});
 		const [url, options] = fetchCalls[0];
-		expect(url).toBe(
-			"https://coolify.example.com/api/v1/applications/app-1/scheduled-tasks",
-		);
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/scheduled-tasks");
 		expect(options.method).toBe("POST");
 		const body = JSON.parse(options.body as string);
 		expect(body.name).toBe("cleanup");
@@ -405,18 +397,14 @@ describe("CoolifyClient", () => {
 		mockFetch(new Response("[]", { status: 200 }));
 		await client.listServiceScheduledTasks("svc-1");
 		const [url] = fetchCalls[0];
-		expect(url).toBe(
-			"https://coolify.example.com/api/v1/services/svc-1/scheduled-tasks",
-		);
+		expect(url).toBe("https://coolify.example.com/api/v1/services/svc-1/scheduled-tasks");
 	});
 
 	it("uses DELETE for deleteServiceScheduledTask", async () => {
 		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
 		await client.deleteServiceScheduledTask("svc-1", "task-1");
 		const [url, options] = fetchCalls[0];
-		expect(url).toBe(
-			"https://coolify.example.com/api/v1/services/svc-1/scheduled-tasks/task-1",
-		);
+		expect(url).toBe("https://coolify.example.com/api/v1/services/svc-1/scheduled-tasks/task-1");
 		expect(options.method).toBe("DELETE");
 	});
 
@@ -448,9 +436,7 @@ describe("CoolifyClient", () => {
 		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
 		await client.deleteApplicationStorage("app-1", "stor-1");
 		const [url, options] = fetchCalls[0];
-		expect(url).toBe(
-			"https://coolify.example.com/api/v1/applications/app-1/storages/stor-1",
-		);
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages/stor-1");
 		expect(options.method).toBe("DELETE");
 	});
 
@@ -466,9 +452,7 @@ describe("CoolifyClient", () => {
 		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
 		await client.deleteDatabaseStorage("db-1", "stor-1");
 		const [url, options] = fetchCalls[0];
-		expect(url).toBe(
-			"https://coolify.example.com/api/v1/databases/db-1/storages/stor-1",
-		);
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/storages/stor-1");
 		expect(options.method).toBe("DELETE");
 	});
 
@@ -553,9 +537,7 @@ describe("CoolifyClient", () => {
 		mockFetch(new Response('{"uuid":"backup-1"}', { status: 200 }));
 		await client.updateDatabaseBackup("db-1", "backup-1", { enabled: false });
 		const [url, options] = fetchCalls[0];
-		expect(url).toBe(
-			"https://coolify.example.com/api/v1/databases/db-1/backups/backup-1",
-		);
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/backups/backup-1");
 		expect(options.method).toBe("PATCH");
 	});
 
