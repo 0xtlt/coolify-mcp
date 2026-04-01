@@ -53,13 +53,14 @@ export function registerStorageTools(server: McpServer, client: CoolifyClient, c
 			"[WRITE] Update a persistent storage mount for a Coolify application",
 			{
 				uuid: schemas.uuid.describe("UUID of the application"),
+				storage_uuid: schemas.uuid.describe("UUID of the storage to update"),
 				name: z.string().optional().describe("Storage name"),
 				mount_path: z.string().optional().describe("Container mount path"),
 				host_path: z.string().optional().describe("Host path"),
 				content: z.string().optional().describe("File content"),
 				custom_fields: schemas.customFields,
 			},
-			async ({ uuid, custom_fields, ...fields }) => {
+			async ({ uuid, storage_uuid, custom_fields, ...fields }) => {
 				if (!isToolAllowed("coolify_update_application_storage", config))
 					return readonlyError("coolify_update_application_storage");
 				return wrap(async () => {
@@ -68,8 +69,8 @@ export function registerStorageTools(server: McpServer, client: CoolifyClient, c
 						if (v !== undefined) data[k] = v;
 					}
 					if (custom_fields) Object.assign(data, custom_fields);
-					await client.updateApplicationStorage(uuid, data);
-					return `Application storage updated`;
+					await client.updateApplicationStorage(uuid, storage_uuid, data);
+					return `Application storage ${storage_uuid} updated`;
 				});
 			},
 		);

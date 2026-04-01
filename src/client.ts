@@ -648,9 +648,14 @@ export class CoolifyClient {
 
 	async updateApplicationStorage(
 		uuid: string,
+		storageUuid: string,
 		data: Record<string, unknown>,
 	): Promise<{ uuid: string }> {
-		return this.request<{ uuid: string }>("PATCH", `/applications/${uuid}/storages`, data);
+		return this.request<{ uuid: string }>(
+			"PATCH",
+			`/applications/${uuid}/storages/${storageUuid}`,
+			data,
+		);
 	}
 
 	async deleteApplicationStorage(uuid: string, storageUuid: string): Promise<{ message: string }> {
@@ -671,9 +676,14 @@ export class CoolifyClient {
 
 	async updateDatabaseStorage(
 		uuid: string,
+		storageUuid: string,
 		data: Record<string, unknown>,
 	): Promise<{ uuid: string }> {
-		return this.request<{ uuid: string }>("PATCH", `/databases/${uuid}/storages`, data);
+		return this.request<{ uuid: string }>(
+			"PATCH",
+			`/databases/${uuid}/storages/${storageUuid}`,
+			data,
+		);
 	}
 
 	async deleteDatabaseStorage(uuid: string, storageUuid: string): Promise<{ message: string }> {
@@ -694,9 +704,14 @@ export class CoolifyClient {
 
 	async updateServiceStorage(
 		uuid: string,
+		storageUuid: string,
 		data: Record<string, unknown>,
 	): Promise<{ uuid: string }> {
-		return this.request<{ uuid: string }>("PATCH", `/services/${uuid}/storages`, data);
+		return this.request<{ uuid: string }>(
+			"PATCH",
+			`/services/${uuid}/storages/${storageUuid}`,
+			data,
+		);
 	}
 
 	async deleteServiceStorage(uuid: string, storageUuid: string): Promise<{ message: string }> {

@@ -424,11 +424,11 @@ describe("CoolifyClient", () => {
 		expect(options.method).toBe("POST");
 	});
 
-	it("uses PATCH for updateApplicationStorage (no storage UUID in path)", async () => {
+	it("uses PATCH for updateApplicationStorage with storage UUID in path", async () => {
 		mockFetch(new Response('{"uuid":"stor-1"}', { status: 200 }));
-		await client.updateApplicationStorage("app-1", { name: "data-v2" });
+		await client.updateApplicationStorage("app-1", "stor-1", { name: "data-v2" });
 		const [url, options] = fetchCalls[0];
-		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages");
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages/stor-1");
 		expect(options.method).toBe("PATCH");
 	});
 

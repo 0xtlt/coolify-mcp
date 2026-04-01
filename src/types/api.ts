@@ -119,6 +119,7 @@ export interface EnvironmentVariable {
 	is_literal: boolean;
 	is_multiline: boolean;
 	is_shown_once: boolean;
+	comment?: string;
 }
 
 // --- Phase 2 types ---
@@ -279,7 +280,6 @@ export interface GitHubBranch {
 
 export interface BackupExecution {
 	id: number;
-	uuid: string;
 	status: string;
 	message?: string;
 	filename?: string;

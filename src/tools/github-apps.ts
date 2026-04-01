@@ -47,13 +47,15 @@ export function registerGitHubAppTools(server: McpServer, client: CoolifyClient,
 			"[WRITE] Update a GitHub App integration in Coolify",
 			{
 				id: schemas.numericId.describe("ID of the GitHub App"),
+				name: z.string().optional().describe("GitHub App name"),
 				custom_fields: schemas.customFields,
 			},
-			async ({ id, custom_fields }) => {
+			async ({ id, name, custom_fields }) => {
 				if (!isToolAllowed("coolify_update_github_app", config))
 					return readonlyError("coolify_update_github_app");
 				return wrap(async () => {
 					const data: Record<string, unknown> = {};
+					if (name !== undefined) data.name = name;
 					if (custom_fields) Object.assign(data, custom_fields);
 					await client.updateGitHubApp(id, data);
 					return `GitHub App ${id} updated`;
