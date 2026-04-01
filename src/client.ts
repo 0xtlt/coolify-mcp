@@ -2,14 +2,21 @@ import type { Config } from "./config";
 import { CoolifyApiError, NetworkError } from "./lib/errors";
 import type {
 	Application,
+	BackupExecution,
 	Database,
 	Deployment,
 	Environment,
 	EnvironmentVariable,
+	GitHubApp,
+	GitHubBranch,
+	GitHubRepository,
 	PrivateKey,
 	Project,
+	ScheduledTask,
+	ScheduledTaskExecution,
 	ServerInfo,
 	Service,
+	Storage,
 	Team,
 	TeamMember,
 } from "./types/api";
@@ -89,8 +96,15 @@ export class CoolifyClient {
 		return this.request("POST", `/applications/${uuid}/start`);
 	}
 
-	async stopApplication(uuid: string): Promise<{ message: string }> {
-		return this.request("POST", `/applications/${uuid}/stop`);
+	async stopApplication(
+		uuid: string,
+		opts?: { docker_cleanup?: boolean },
+	): Promise<{ message: string }> {
+		const params = new URLSearchParams();
+		if (opts?.docker_cleanup !== undefined)
+			params.set("docker_cleanup", String(opts.docker_cleanup));
+		const qs = params.toString();
+		return this.request("POST", `/applications/${uuid}/stop${qs ? `?${qs}` : ""}`);
 	}
 
 	async restartApplication(uuid: string): Promise<{ message: string; deployment_uuid?: string }> {
@@ -180,8 +194,11 @@ export class CoolifyClient {
 		return this.request<{ uuid: string }>("PATCH", `/servers/${uuid}`, data);
 	}
 
-	async deleteServer(uuid: string): Promise<{ message: string }> {
-		return this.request("DELETE", `/servers/${uuid}`);
+	async deleteServer(uuid: string, opts?: { force?: boolean }): Promise<{ message: string }> {
+		const params = new URLSearchParams();
+		if (opts?.force !== undefined) params.set("force", String(opts.force));
+		const qs = params.toString();
+		return this.request("DELETE", `/servers/${uuid}${qs ? `?${qs}` : ""}`);
 	}
 
 	// Databases
@@ -214,8 +231,15 @@ export class CoolifyClient {
 		return this.request("GET", `/databases/${uuid}/start`);
 	}
 
-	async stopDatabase(uuid: string): Promise<{ message: string }> {
-		return this.request("GET", `/databases/${uuid}/stop`);
+	async stopDatabase(
+		uuid: string,
+		opts?: { docker_cleanup?: boolean },
+	): Promise<{ message: string }> {
+		const params = new URLSearchParams();
+		if (opts?.docker_cleanup !== undefined)
+			params.set("docker_cleanup", String(opts.docker_cleanup));
+		const qs = params.toString();
+		return this.request("GET", `/databases/${uuid}/stop${qs ? `?${qs}` : ""}`);
 	}
 
 	async restartDatabase(uuid: string): Promise<{ message: string }> {
@@ -240,6 +264,7 @@ export class CoolifyClient {
 			is_literal?: boolean;
 			is_multiline?: boolean;
 			is_shown_once?: boolean;
+			comment?: string;
 		},
 	): Promise<{ uuid: string }> {
 		return this.request("POST", `/databases/${dbUuid}/envs`, data);
@@ -254,6 +279,7 @@ export class CoolifyClient {
 			is_literal?: boolean;
 			is_multiline?: boolean;
 			is_shown_once?: boolean;
+			comment?: string;
 		}>,
 	): Promise<EnvironmentVariable[]> {
 		return this.request("PATCH", `/databases/${dbUuid}/envs/bulk`, { data: envs });
@@ -308,8 +334,15 @@ export class CoolifyClient {
 		return this.request("POST", `/services/${uuid}/start`);
 	}
 
-	async stopService(uuid: string): Promise<{ message: string }> {
-		return this.request("POST", `/services/${uuid}/stop`);
+	async stopService(
+		uuid: string,
+		opts?: { docker_cleanup?: boolean },
+	): Promise<{ message: string }> {
+		const params = new URLSearchParams();
+		if (opts?.docker_cleanup !== undefined)
+			params.set("docker_cleanup", String(opts.docker_cleanup));
+		const qs = params.toString();
+		return this.request("POST", `/services/${uuid}/stop${qs ? `?${qs}` : ""}`);
 	}
 
 	async restartService(uuid: string): Promise<{ message: string }> {
@@ -330,6 +363,7 @@ export class CoolifyClient {
 			is_literal?: boolean;
 			is_multiline?: boolean;
 			is_shown_once?: boolean;
+			comment?: string;
 		},
 	): Promise<{ uuid: string }> {
 		return this.request("POST", `/applications/${appUuid}/envs`, data);
@@ -344,6 +378,7 @@ export class CoolifyClient {
 			is_literal?: boolean;
 			is_multiline?: boolean;
 			is_shown_once?: boolean;
+			comment?: string;
 		}>,
 	): Promise<EnvironmentVariable[]> {
 		return this.request("PATCH", `/applications/${appUuid}/envs/bulk`, { data: envs });
@@ -425,6 +460,7 @@ export class CoolifyClient {
 			is_literal?: boolean;
 			is_multiline?: boolean;
 			is_shown_once?: boolean;
+			comment?: string;
 		},
 	): Promise<{ uuid: string }> {
 		return this.request("POST", `/services/${serviceUuid}/envs`, data);
@@ -439,6 +475,7 @@ export class CoolifyClient {
 			is_literal?: boolean;
 			is_multiline?: boolean;
 			is_shown_once?: boolean;
+			comment?: string;
 		}>,
 	): Promise<EnvironmentVariable[]> {
 		return this.request("PATCH", `/services/${serviceUuid}/envs/bulk`, { data: envs });
@@ -502,5 +539,232 @@ export class CoolifyClient {
 
 	async getTeamMembers(teamId: number): Promise<TeamMember[]> {
 		return this.request<TeamMember[]>("GET", `/teams/${teamId}/members`);
+	}
+
+	// Application Scheduled Tasks
+	async listApplicationScheduledTasks(uuid: string): Promise<ScheduledTask[]> {
+		return this.request<ScheduledTask[]>("GET", `/applications/${uuid}/scheduled-tasks`);
+	}
+
+	async createApplicationScheduledTask(
+		uuid: string,
+		data: {
+			name: string;
+			command: string;
+			frequency: string;
+			container?: string;
+			timeout?: number;
+			enabled?: boolean;
+		},
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("POST", `/applications/${uuid}/scheduled-tasks`, data);
+	}
+
+	async updateApplicationScheduledTask(
+		uuid: string,
+		taskUuid: string,
+		data: Record<string, unknown>,
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>(
+			"PATCH",
+			`/applications/${uuid}/scheduled-tasks/${taskUuid}`,
+			data,
+		);
+	}
+
+	async deleteApplicationScheduledTask(
+		uuid: string,
+		taskUuid: string,
+	): Promise<{ message: string }> {
+		return this.request("DELETE", `/applications/${uuid}/scheduled-tasks/${taskUuid}`);
+	}
+
+	async listApplicationScheduledTaskExecutions(
+		uuid: string,
+		taskUuid: string,
+	): Promise<ScheduledTaskExecution[]> {
+		return this.request<ScheduledTaskExecution[]>(
+			"GET",
+			`/applications/${uuid}/scheduled-tasks/${taskUuid}/executions`,
+		);
+	}
+
+	// Service Scheduled Tasks
+	async listServiceScheduledTasks(uuid: string): Promise<ScheduledTask[]> {
+		return this.request<ScheduledTask[]>("GET", `/services/${uuid}/scheduled-tasks`);
+	}
+
+	async createServiceScheduledTask(
+		uuid: string,
+		data: {
+			name: string;
+			command: string;
+			frequency: string;
+			container?: string;
+			timeout?: number;
+			enabled?: boolean;
+		},
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("POST", `/services/${uuid}/scheduled-tasks`, data);
+	}
+
+	async updateServiceScheduledTask(
+		uuid: string,
+		taskUuid: string,
+		data: Record<string, unknown>,
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>(
+			"PATCH",
+			`/services/${uuid}/scheduled-tasks/${taskUuid}`,
+			data,
+		);
+	}
+
+	async deleteServiceScheduledTask(uuid: string, taskUuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/services/${uuid}/scheduled-tasks/${taskUuid}`);
+	}
+
+	async listServiceScheduledTaskExecutions(
+		uuid: string,
+		taskUuid: string,
+	): Promise<ScheduledTaskExecution[]> {
+		return this.request<ScheduledTaskExecution[]>(
+			"GET",
+			`/services/${uuid}/scheduled-tasks/${taskUuid}/executions`,
+		);
+	}
+
+	// Application Storages
+	async listApplicationStorages(uuid: string): Promise<Storage[]> {
+		return this.request<Storage[]>("GET", `/applications/${uuid}/storages`);
+	}
+
+	async createApplicationStorage(
+		uuid: string,
+		data: { name: string; mount_path: string; host_path?: string; content?: string },
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("POST", `/applications/${uuid}/storages`, data);
+	}
+
+	async updateApplicationStorage(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("PATCH", `/applications/${uuid}/storages`, data);
+	}
+
+	async deleteApplicationStorage(uuid: string, storageUuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/applications/${uuid}/storages/${storageUuid}`);
+	}
+
+	// Database Storages
+	async listDatabaseStorages(uuid: string): Promise<Storage[]> {
+		return this.request<Storage[]>("GET", `/databases/${uuid}/storages`);
+	}
+
+	async createDatabaseStorage(
+		uuid: string,
+		data: { name: string; mount_path: string; host_path?: string; content?: string },
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("POST", `/databases/${uuid}/storages`, data);
+	}
+
+	async updateDatabaseStorage(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("PATCH", `/databases/${uuid}/storages`, data);
+	}
+
+	async deleteDatabaseStorage(uuid: string, storageUuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/databases/${uuid}/storages/${storageUuid}`);
+	}
+
+	// Service Storages
+	async listServiceStorages(uuid: string): Promise<Storage[]> {
+		return this.request<Storage[]>("GET", `/services/${uuid}/storages`);
+	}
+
+	async createServiceStorage(
+		uuid: string,
+		data: { name: string; mount_path: string; host_path?: string; content?: string },
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("POST", `/services/${uuid}/storages`, data);
+	}
+
+	async updateServiceStorage(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>("PATCH", `/services/${uuid}/storages`, data);
+	}
+
+	async deleteServiceStorage(uuid: string, storageUuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/services/${uuid}/storages/${storageUuid}`);
+	}
+
+	// GitHub Apps
+	async listGitHubApps(): Promise<GitHubApp[]> {
+		return this.request<GitHubApp[]>("GET", "/github-apps");
+	}
+
+	async createGitHubApp(data: Record<string, unknown>): Promise<{ id: number }> {
+		return this.request<{ id: number }>("POST", "/github-apps", data);
+	}
+
+	async updateGitHubApp(id: number, data: Record<string, unknown>): Promise<{ id: number }> {
+		return this.request<{ id: number }>("PATCH", `/github-apps/${id}`, data);
+	}
+
+	async deleteGitHubApp(id: number): Promise<{ message: string }> {
+		return this.request("DELETE", `/github-apps/${id}`);
+	}
+
+	async listGitHubAppRepositories(id: number): Promise<GitHubRepository[]> {
+		return this.request<GitHubRepository[]>("GET", `/github-apps/${id}/repositories`);
+	}
+
+	async listGitHubAppBranches(id: number, owner: string, repo: string): Promise<GitHubBranch[]> {
+		return this.request<GitHubBranch[]>(
+			"GET",
+			`/github-apps/${id}/repositories/${owner}/${repo}/branches`,
+		);
+	}
+
+	// Backup Executions
+	async listBackupExecutions(dbUuid: string, backupUuid: string): Promise<BackupExecution[]> {
+		return this.request<BackupExecution[]>(
+			"GET",
+			`/databases/${dbUuid}/backups/${backupUuid}/executions`,
+		);
+	}
+
+	async deleteBackupExecution(
+		dbUuid: string,
+		backupUuid: string,
+		executionUuid: string,
+	): Promise<{ message: string }> {
+		return this.request(
+			"DELETE",
+			`/databases/${dbUuid}/backups/${backupUuid}/executions/${executionUuid}`,
+		);
+	}
+
+	// Backup Schedule Update
+	async updateDatabaseBackup(
+		dbUuid: string,
+		backupUuid: string,
+		data: Record<string, unknown>,
+	): Promise<{ uuid: string }> {
+		return this.request<{ uuid: string }>(
+			"PATCH",
+			`/databases/${dbUuid}/backups/${backupUuid}`,
+			data,
+		);
+	}
+
+	// Resources (aggregate)
+	async listResources(): Promise<unknown[]> {
+		return this.request<unknown[]>("GET", "/resources");
 	}
 }

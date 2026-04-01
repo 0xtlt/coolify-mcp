@@ -4,19 +4,25 @@ import {
 	type Database,
 	type Deployment,
 	type Environment,
+	type GitHubApp,
 	type PrivateKey,
 	type Project,
+	type ScheduledTask,
 	type ServerInfo,
 	type Service,
+	type Storage,
 	type Team,
 	toApplicationSummary,
 	toDatabaseSummary,
 	toDeploymentSummary,
 	toEnvironmentSummary,
+	toGitHubAppSummary,
 	toPrivateKeySummary,
 	toProjectSummary,
+	toScheduledTaskSummary,
 	toServerSummary,
 	toServiceSummary,
+	toStorageSummary,
 	toTeamSummary,
 } from "./api";
 
@@ -261,5 +267,94 @@ describe("toPrivateKeySummary", () => {
 		expect("is_git_related" in summary).toBe(false);
 		expect("created_at" in summary).toBe(false);
 		expect("updated_at" in summary).toBe(false);
+	});
+});
+
+describe("toScheduledTaskSummary", () => {
+	const task: ScheduledTask = {
+		uuid: "task-001",
+		name: "cleanup-logs",
+		command: "rm -rf /tmp/logs/*",
+		frequency: "0 2 * * *",
+		container: "app",
+		timeout: 300,
+		enabled: true,
+		created_at: "2024-01-01T00:00:00Z",
+		updated_at: "2024-06-15T00:00:00Z",
+	};
+
+	it("extracts summary fields", () => {
+		const summary = toScheduledTaskSummary(task);
+		expect(summary.uuid).toBe("task-001");
+		expect(summary.name).toBe("cleanup-logs");
+		expect(summary.frequency).toBe("0 2 * * *");
+		expect(summary.enabled).toBe(true);
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toScheduledTaskSummary(task);
+		expect("command" in summary).toBe(false);
+		expect("container" in summary).toBe(false);
+		expect("timeout" in summary).toBe(false);
+		expect("created_at" in summary).toBe(false);
+	});
+});
+
+describe("toStorageSummary", () => {
+	const storage: Storage = {
+		uuid: "stor-001",
+		name: "app-data",
+		mount_path: "/data",
+		host_path: "/mnt/data",
+		content: "some config",
+		created_at: "2024-01-01T00:00:00Z",
+		updated_at: "2024-06-15T00:00:00Z",
+	};
+
+	it("extracts summary fields", () => {
+		const summary = toStorageSummary(storage);
+		expect(summary.uuid).toBe("stor-001");
+		expect(summary.name).toBe("app-data");
+		expect(summary.mount_path).toBe("/data");
+		expect(summary.host_path).toBe("/mnt/data");
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toStorageSummary(storage);
+		expect("content" in summary).toBe(false);
+		expect("created_at" in summary).toBe(false);
+		expect("updated_at" in summary).toBe(false);
+	});
+});
+
+describe("toGitHubAppSummary", () => {
+	const app: GitHubApp = {
+		id: 42,
+		uuid: "gh-001",
+		name: "my-github-app",
+		organization_id: 1,
+		app_id: 12345,
+		installation_id: 67890,
+		html_url: "https://github.com/apps/my-app",
+		is_system_wide: false,
+		created_at: "2024-01-01T00:00:00Z",
+		updated_at: "2024-06-15T00:00:00Z",
+	};
+
+	it("extracts summary fields", () => {
+		const summary = toGitHubAppSummary(app);
+		expect(summary.id).toBe(42);
+		expect(summary.uuid).toBe("gh-001");
+		expect(summary.name).toBe("my-github-app");
+		expect(summary.is_system_wide).toBe(false);
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toGitHubAppSummary(app);
+		expect("organization_id" in summary).toBe(false);
+		expect("app_id" in summary).toBe(false);
+		expect("installation_id" in summary).toBe(false);
+		expect("html_url" in summary).toBe(false);
+		expect("created_at" in summary).toBe(false);
 	});
 });

@@ -299,6 +299,274 @@ describe("CoolifyClient", () => {
 		);
 	});
 
+	// Batch 1: docker_cleanup on stop
+	it("appends docker_cleanup query param for stopApplication", async () => {
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.stopApplication("app-1", { docker_cleanup: true });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/stop?docker_cleanup=true",
+		);
+		expect(options.method).toBe("POST");
+	});
+
+	it("does not append docker_cleanup when undefined for stopApplication", async () => {
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.stopApplication("app-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/stop");
+	});
+
+	it("appends docker_cleanup query param for stopDatabase", async () => {
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.stopDatabase("db-1", { docker_cleanup: false });
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/databases/db-1/stop?docker_cleanup=false",
+		);
+	});
+
+	it("appends docker_cleanup query param for stopService", async () => {
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.stopService("svc-1", { docker_cleanup: true });
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/services/svc-1/stop?docker_cleanup=true",
+		);
+	});
+
+	// Batch 1: force on server delete
+	it("appends force query param for deleteServer", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteServer("srv-1", { force: true });
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/servers/srv-1?force=true");
+	});
+
+	// Application Scheduled Tasks
+	it("constructs correct URL for listApplicationScheduledTasks", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listApplicationScheduledTasks("app-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/scheduled-tasks",
+		);
+	});
+
+	it("uses POST for createApplicationScheduledTask", async () => {
+		mockFetch(new Response('{"uuid":"task-1"}', { status: 200 }));
+		await client.createApplicationScheduledTask("app-1", {
+			name: "cleanup",
+			command: "rm -rf /tmp/*",
+			frequency: "0 * * * *",
+		});
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/scheduled-tasks",
+		);
+		expect(options.method).toBe("POST");
+		const body = JSON.parse(options.body as string);
+		expect(body.name).toBe("cleanup");
+		expect(body.command).toBe("rm -rf /tmp/*");
+		expect(body.frequency).toBe("0 * * * *");
+	});
+
+	it("uses PATCH for updateApplicationScheduledTask", async () => {
+		mockFetch(new Response('{"uuid":"task-1"}', { status: 200 }));
+		await client.updateApplicationScheduledTask("app-1", "task-1", { enabled: false });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/scheduled-tasks/task-1",
+		);
+		expect(options.method).toBe("PATCH");
+	});
+
+	it("uses DELETE for deleteApplicationScheduledTask", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteApplicationScheduledTask("app-1", "task-1");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/scheduled-tasks/task-1",
+		);
+		expect(options.method).toBe("DELETE");
+	});
+
+	it("constructs correct URL for listApplicationScheduledTaskExecutions", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listApplicationScheduledTaskExecutions("app-1", "task-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/scheduled-tasks/task-1/executions",
+		);
+	});
+
+	// Service Scheduled Tasks
+	it("constructs correct URL for listServiceScheduledTasks", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listServiceScheduledTasks("svc-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/services/svc-1/scheduled-tasks",
+		);
+	});
+
+	it("uses DELETE for deleteServiceScheduledTask", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteServiceScheduledTask("svc-1", "task-1");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/services/svc-1/scheduled-tasks/task-1",
+		);
+		expect(options.method).toBe("DELETE");
+	});
+
+	// Application Storages
+	it("constructs correct URL for listApplicationStorages", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listApplicationStorages("app-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages");
+	});
+
+	it("uses POST for createApplicationStorage", async () => {
+		mockFetch(new Response('{"uuid":"stor-1"}', { status: 200 }));
+		await client.createApplicationStorage("app-1", { name: "data", mount_path: "/data" });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages");
+		expect(options.method).toBe("POST");
+	});
+
+	it("uses PATCH for updateApplicationStorage (no storage UUID in path)", async () => {
+		mockFetch(new Response('{"uuid":"stor-1"}', { status: 200 }));
+		await client.updateApplicationStorage("app-1", { name: "data-v2" });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages");
+		expect(options.method).toBe("PATCH");
+	});
+
+	it("uses DELETE for deleteApplicationStorage with storage UUID in path", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteApplicationStorage("app-1", "stor-1");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/storages/stor-1",
+		);
+		expect(options.method).toBe("DELETE");
+	});
+
+	// Database Storages
+	it("constructs correct URL for listDatabaseStorages", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listDatabaseStorages("db-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/storages");
+	});
+
+	it("uses DELETE for deleteDatabaseStorage", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteDatabaseStorage("db-1", "stor-1");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/databases/db-1/storages/stor-1",
+		);
+		expect(options.method).toBe("DELETE");
+	});
+
+	// Service Storages
+	it("constructs correct URL for listServiceStorages", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listServiceStorages("svc-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/services/svc-1/storages");
+	});
+
+	// GitHub Apps
+	it("constructs correct URL for listGitHubApps", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listGitHubApps();
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/github-apps");
+	});
+
+	it("uses POST for createGitHubApp", async () => {
+		mockFetch(new Response('{"id":1}', { status: 200 }));
+		await client.createGitHubApp({ name: "my-app" });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/github-apps");
+		expect(options.method).toBe("POST");
+	});
+
+	it("uses PATCH for updateGitHubApp with numeric id", async () => {
+		mockFetch(new Response('{"id":1}', { status: 200 }));
+		await client.updateGitHubApp(42, { name: "updated" });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/github-apps/42");
+		expect(options.method).toBe("PATCH");
+	});
+
+	it("uses DELETE for deleteGitHubApp", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteGitHubApp(42);
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/github-apps/42");
+		expect(options.method).toBe("DELETE");
+	});
+
+	it("constructs correct URL for listGitHubAppRepositories", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listGitHubAppRepositories(5);
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/github-apps/5/repositories");
+	});
+
+	it("constructs correct URL for listGitHubAppBranches", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listGitHubAppBranches(5, "octocat", "hello-world");
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/github-apps/5/repositories/octocat/hello-world/branches",
+		);
+	});
+
+	// Backup Executions
+	it("constructs correct URL for listBackupExecutions", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listBackupExecutions("db-1", "backup-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/databases/db-1/backups/backup-1/executions",
+		);
+	});
+
+	it("uses DELETE for deleteBackupExecution", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteBackupExecution("db-1", "backup-1", "exec-1");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/databases/db-1/backups/backup-1/executions/exec-1",
+		);
+		expect(options.method).toBe("DELETE");
+	});
+
+	// Backup Schedule Update
+	it("uses PATCH for updateDatabaseBackup", async () => {
+		mockFetch(new Response('{"uuid":"backup-1"}', { status: 200 }));
+		await client.updateDatabaseBackup("db-1", "backup-1", { enabled: false });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/databases/db-1/backups/backup-1",
+		);
+		expect(options.method).toBe("PATCH");
+	});
+
+	// Resources listing
+	it("constructs correct URL for listResources", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listResources();
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/resources");
+	});
+
 	it("parses JSON response correctly", async () => {
 		const apps = [
 			{

@@ -106,14 +106,18 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 		server.tool(
 			"coolify_stop_database",
 			"[DESTRUCTIVE] Stop a running Coolify database. Causes downtime.",
-			{ uuid: schemas.uuid, confirm: schemas.confirm },
-			async ({ uuid, confirm }) => {
+			{
+				uuid: schemas.uuid,
+				confirm: schemas.confirm,
+				docker_cleanup: z.boolean().optional().describe("Clean up Docker resources on stop"),
+			},
+			async ({ uuid, confirm, docker_cleanup }) => {
 				if (!isToolAllowed("coolify_stop_database", config))
 					return readonlyError("coolify_stop_database");
 				const check = checkConfirmation("coolify_stop_database", { uuid, confirm }, config);
 				if (!check.proceed) return check.response!;
 				return wrap(async () => {
-					const result = await client.stopDatabase(uuid);
+					const result = await client.stopDatabase(uuid, { docker_cleanup });
 					return result.message || `Database ${uuid} stop command sent`;
 				});
 			},
@@ -245,6 +249,77 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 				return wrap(async () => {
 					const result = await client.deleteDatabaseBackup(uuid, backup_uuid, { delete_s3 });
 					return result.message || `Backup ${backup_uuid} deleted`;
+				});
+			},
+		);
+	}
+
+	// Read: list backup executions
+	server.tool(
+		"coolify_list_backup_executions",
+		"List executions of a database backup schedule",
+		{
+			uuid: schemas.uuid.describe("UUID of the database"),
+			backup_uuid: schemas.uuid.describe("UUID of the scheduled backup"),
+		},
+		async ({ uuid, backup_uuid }) => {
+			return wrap(() => client.listBackupExecutions(uuid, backup_uuid));
+		},
+	);
+
+	// Destructive: delete backup execution
+	if (isToolAllowed("coolify_delete_backup_execution", config)) {
+		server.tool(
+			"coolify_delete_backup_execution",
+			"[DESTRUCTIVE] Delete a specific backup execution record",
+			{
+				uuid: schemas.uuid.describe("UUID of the database"),
+				backup_uuid: schemas.uuid.describe("UUID of the scheduled backup"),
+				execution_uuid: schemas.uuid.describe("UUID of the backup execution to delete"),
+				confirm: schemas.confirm,
+			},
+			async ({ uuid, backup_uuid, execution_uuid, confirm }) => {
+				if (!isToolAllowed("coolify_delete_backup_execution", config))
+					return readonlyError("coolify_delete_backup_execution");
+				const check = checkConfirmation(
+					"coolify_delete_backup_execution",
+					{ uuid, backup_uuid, execution_uuid, confirm },
+					config,
+				);
+				if (!check.proceed) return check.response!;
+				return wrap(async () => {
+					const result = await client.deleteBackupExecution(uuid, backup_uuid, execution_uuid);
+					return result.message || `Backup execution ${execution_uuid} deleted`;
+				});
+			},
+		);
+	}
+
+	// Write: update backup schedule
+	if (isToolAllowed("coolify_update_database_backup", config)) {
+		server.tool(
+			"coolify_update_database_backup",
+			"[WRITE] Update a database backup schedule configuration",
+			{
+				uuid: schemas.uuid.describe("UUID of the database"),
+				backup_uuid: schemas.uuid.describe("UUID of the scheduled backup"),
+				enabled: z.boolean().optional().describe("Enable or disable the backup schedule"),
+				frequency: z.string().optional().describe("Cron frequency for backups"),
+				s3_storage_id: z.number().int().optional().describe("S3 storage ID for remote backups"),
+				database_name_prefix: z.string().optional().describe("Prefix for backup database name"),
+				custom_fields: schemas.customFields,
+			},
+			async ({ uuid, backup_uuid, custom_fields, ...fields }) => {
+				if (!isToolAllowed("coolify_update_database_backup", config))
+					return readonlyError("coolify_update_database_backup");
+				return wrap(async () => {
+					const data: Record<string, unknown> = {};
+					for (const [k, v] of Object.entries(fields)) {
+						if (v !== undefined) data[k] = v;
+					}
+					if (custom_fields) Object.assign(data, custom_fields);
+					await client.updateDatabaseBackup(uuid, backup_uuid, data);
+					return `Backup schedule ${backup_uuid} updated`;
 				});
 			},
 		);

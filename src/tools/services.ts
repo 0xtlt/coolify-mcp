@@ -75,14 +75,18 @@ export function registerServiceTools(server: McpServer, client: CoolifyClient, c
 		server.tool(
 			"coolify_stop_service",
 			"[DESTRUCTIVE] Stop a running Coolify service. Causes downtime.",
-			{ uuid: schemas.uuid, confirm: schemas.confirm },
-			async ({ uuid, confirm }) => {
+			{
+				uuid: schemas.uuid,
+				confirm: schemas.confirm,
+				docker_cleanup: z.boolean().optional().describe("Clean up Docker resources on stop"),
+			},
+			async ({ uuid, confirm, docker_cleanup }) => {
 				if (!isToolAllowed("coolify_stop_service", config))
 					return readonlyError("coolify_stop_service");
 				const check = checkConfirmation("coolify_stop_service", { uuid, confirm }, config);
 				if (!check.proceed) return check.response!;
 				return wrap(async () => {
-					const result = await client.stopService(uuid);
+					const result = await client.stopService(uuid, { docker_cleanup });
 					return result.message || `Service ${uuid} stop command sent`;
 				});
 			},

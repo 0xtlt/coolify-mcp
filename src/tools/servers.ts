@@ -138,14 +138,15 @@ export function registerServerTools(server: McpServer, client: CoolifyClient, co
 			{
 				uuid: schemas.uuid,
 				confirm: schemas.confirm,
+				force: z.boolean().optional().describe("Force delete even if server has running resources"),
 			},
-			async ({ uuid, confirm }) => {
+			async ({ uuid, confirm, force }) => {
 				if (!isToolAllowed("coolify_delete_server", config))
 					return readonlyError("coolify_delete_server");
 				const check = checkConfirmation("coolify_delete_server", { uuid, confirm }, config);
 				if (!check.proceed) return check.response!;
 				return wrap(async () => {
-					const result = await client.deleteServer(uuid);
+					const result = await client.deleteServer(uuid, { force });
 					return result.message || `Server ${uuid} deleted`;
 				});
 			},
