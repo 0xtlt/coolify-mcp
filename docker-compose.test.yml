@@ -28,7 +28,7 @@ services:
     environment:
       APP_NAME: "Coolify"
       APP_ENV: local
-      APP_DEBUG: "true"
+      APP_DEBUG: "false"
       APP_ID: "test-integration-id-1234567890abcdef"
       APP_KEY: "base64:MUScccH4Baj16/FXv2FjY0t6U5fse9zivTxus2AC7XI="
       APP_URL: "http://localhost:8099"
