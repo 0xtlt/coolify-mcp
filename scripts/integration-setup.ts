@@ -6,7 +6,7 @@
 import { writeFileSync } from "node:fs";
 
 const COOLIFY_URL = process.env.COOLIFY_TEST_URL ?? "http://localhost:8099";
-const MAX_WAIT_MS = 120_000;
+const MAX_WAIT_MS = 300_000;
 const POLL_INTERVAL_MS = 3_000;
 const STATE_FILE = "/tmp/coolify-integration-state.json";
 
