@@ -27,6 +27,10 @@ jobs:
       - name: Run integration tests
         run: bun run test:integration:run
 
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.test.yml logs --tail=200
+
       - name: Teardown containers
         if: always()
         run: bun run test:integration:teardown
