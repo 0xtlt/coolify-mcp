@@ -119,6 +119,7 @@ export interface EnvironmentVariable {
 	is_literal: boolean;
 	is_multiline: boolean;
 	is_shown_once: boolean;
+	comment?: string;
 }
 
 // --- Phase 2 types ---
@@ -193,6 +194,97 @@ export interface TeamMember {
 	name: string;
 	email: string;
 	role?: string;
+}
+
+// --- Scheduled Tasks types ---
+
+export interface ScheduledTask {
+	uuid: string;
+	name: string;
+	command: string;
+	frequency: string;
+	container?: string;
+	timeout?: number;
+	enabled: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface ScheduledTaskSummary {
+	uuid: string;
+	name: string;
+	frequency: string;
+	enabled: boolean;
+}
+
+export interface ScheduledTaskExecution {
+	id: number;
+	status: string;
+	message?: string;
+	created_at: string;
+}
+
+// --- Storage/Volumes types ---
+
+export interface Storage {
+	uuid: string;
+	name: string;
+	mount_path: string;
+	host_path?: string;
+	content?: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface StorageSummary {
+	uuid: string;
+	name: string;
+	mount_path: string;
+	host_path?: string;
+}
+
+// --- GitHub Apps types ---
+
+export interface GitHubApp {
+	id: number;
+	uuid: string;
+	name: string;
+	organization_id?: number;
+	app_id?: number;
+	installation_id?: number;
+	html_url?: string;
+	is_system_wide?: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface GitHubAppSummary {
+	id: number;
+	uuid: string;
+	name: string;
+	is_system_wide?: boolean;
+}
+
+export interface GitHubRepository {
+	id: number;
+	full_name: string;
+	private: boolean;
+	html_url: string;
+}
+
+export interface GitHubBranch {
+	name: string;
+}
+
+// --- Backup Execution types ---
+
+export interface BackupExecution {
+	id: number;
+	status: string;
+	message?: string;
+	filename?: string;
+	size?: number;
+	created_at: string;
 }
 
 // Transformer functions
@@ -273,5 +365,32 @@ export function toTeamSummary(team: Team): TeamSummary {
 		id: team.id,
 		name: team.name,
 		description: team.description,
+	};
+}
+
+export function toScheduledTaskSummary(task: ScheduledTask): ScheduledTaskSummary {
+	return {
+		uuid: task.uuid,
+		name: task.name,
+		frequency: task.frequency,
+		enabled: task.enabled,
+	};
+}
+
+export function toStorageSummary(storage: Storage): StorageSummary {
+	return {
+		uuid: storage.uuid,
+		name: storage.name,
+		mount_path: storage.mount_path,
+		host_path: storage.host_path,
+	};
+}
+
+export function toGitHubAppSummary(app: GitHubApp): GitHubAppSummary {
+	return {
+		id: app.id,
+		uuid: app.uuid,
+		name: app.name,
+		is_system_wide: app.is_system_wide,
 	};
 }

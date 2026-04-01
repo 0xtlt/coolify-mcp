@@ -27,8 +27,9 @@ services:
       - "${COOLIFY_TEST_PORT:-8099}:8080"
     environment:
       APP_NAME: "Coolify"
-      APP_ENV: local
-      APP_DEBUG: "true"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      TELESCOPE_ENABLED: "false"
       APP_ID: "test-integration-id-1234567890abcdef"
       APP_KEY: "base64:MUScccH4Baj16/FXv2FjY0t6U5fse9zivTxus2AC7XI="
       APP_URL: "http://localhost:8099"

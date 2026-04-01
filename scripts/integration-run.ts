@@ -18,6 +18,10 @@ const files = [
 	"11-service-envs",
 	"12-deployments",
 	"13-logs",
+	"15-scheduled-tasks",
+	"16-storages",
+	"17-github-apps",
+	"18-resources",
 	"14-cleanup",
 ];
 

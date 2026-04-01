@@ -31,3 +31,5 @@ export const customFields = z
 	.record(z.string(), z.unknown())
 	.optional()
 	.describe("Additional fields not listed above (advanced)");
+
+export const numericId = z.number().int().min(1).describe("ID of the resource");

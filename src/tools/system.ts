@@ -16,4 +16,13 @@ export function registerSystemTools(server: McpServer, client: CoolifyClient, _c
 			return wrap(() => client.healthcheck());
 		},
 	);
+
+	server.tool(
+		"coolify_list_resources",
+		"List all resources (applications, databases, services) across all projects",
+		{},
+		async () => {
+			return wrap(() => client.listResources());
+		},
+	);
 }

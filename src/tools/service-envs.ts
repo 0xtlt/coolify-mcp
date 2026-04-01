@@ -28,8 +28,18 @@ export function registerServiceEnvTools(server: McpServer, client: CoolifyClient
 				is_literal: z.boolean().default(false).describe("Do not interpolate/expand the value"),
 				is_multiline: z.boolean().default(false).describe("Value contains newlines"),
 				is_shown_once: z.boolean().default(false).describe("Value is only shown once then hidden"),
+				comment: z.string().optional().describe("Comment or note for this variable"),
 			},
-			async ({ uuid, key, value, is_preview, is_literal, is_multiline, is_shown_once }) => {
+			async ({
+				uuid,
+				key,
+				value,
+				is_preview,
+				is_literal,
+				is_multiline,
+				is_shown_once,
+				comment,
+			}) => {
 				if (!isToolAllowed("coolify_create_service_env", config))
 					return readonlyError("coolify_create_service_env");
 				return wrap(async () => {
@@ -40,6 +50,7 @@ export function registerServiceEnvTools(server: McpServer, client: CoolifyClient
 						is_literal,
 						is_multiline,
 						is_shown_once,
+						comment,
 					});
 					return { message: `Service env var '${key}' created`, env_uuid: result.uuid };
 				});
@@ -62,6 +73,7 @@ export function registerServiceEnvTools(server: McpServer, client: CoolifyClient
 							is_literal: z.boolean().optional(),
 							is_multiline: z.boolean().optional(),
 							is_shown_once: z.boolean().optional(),
+							comment: z.string().optional(),
 						}),
 					)
 					.min(1)

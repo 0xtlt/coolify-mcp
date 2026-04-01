@@ -97,6 +97,71 @@ describe("isToolAllowed", () => {
 		expect(isToolAllowed("coolify_delete_database_backup", config)).toBe(false);
 	});
 
+	// Scheduled Tasks
+	it("blocks scheduled task write/destructive in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_create_application_scheduled_task", config)).toBe(false);
+		expect(isToolAllowed("coolify_update_application_scheduled_task", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_application_scheduled_task", config)).toBe(false);
+		expect(isToolAllowed("coolify_create_service_scheduled_task", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_service_scheduled_task", config)).toBe(false);
+	});
+
+	it("allows scheduled task read tools in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_list_application_scheduled_tasks", config)).toBe(true);
+		expect(isToolAllowed("coolify_list_application_scheduled_task_executions", config)).toBe(true);
+		expect(isToolAllowed("coolify_list_service_scheduled_tasks", config)).toBe(true);
+		expect(isToolAllowed("coolify_list_service_scheduled_task_executions", config)).toBe(true);
+	});
+
+	// Storages
+	it("blocks storage write/destructive in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_create_application_storage", config)).toBe(false);
+		expect(isToolAllowed("coolify_update_application_storage", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_application_storage", config)).toBe(false);
+		expect(isToolAllowed("coolify_create_database_storage", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_database_storage", config)).toBe(false);
+		expect(isToolAllowed("coolify_create_service_storage", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_service_storage", config)).toBe(false);
+	});
+
+	it("allows storage read tools in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_list_application_storages", config)).toBe(true);
+		expect(isToolAllowed("coolify_list_database_storages", config)).toBe(true);
+		expect(isToolAllowed("coolify_list_service_storages", config)).toBe(true);
+	});
+
+	// GitHub Apps
+	it("blocks github app write/destructive in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_create_github_app", config)).toBe(false);
+		expect(isToolAllowed("coolify_update_github_app", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_github_app", config)).toBe(false);
+	});
+
+	it("allows github app read tools in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_list_github_apps", config)).toBe(true);
+		expect(isToolAllowed("coolify_list_github_app_repositories", config)).toBe(true);
+		expect(isToolAllowed("coolify_list_github_app_branches", config)).toBe(true);
+	});
+
+	// Backup Executions & Update
+	it("blocks backup execution destructive and backup update in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_delete_backup_execution", config)).toBe(false);
+		expect(isToolAllowed("coolify_update_database_backup", config)).toBe(false);
+	});
+
+	it("allows backup execution read and resources list in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_list_backup_executions", config)).toBe(true);
+		expect(isToolAllowed("coolify_list_resources", config)).toBe(true);
+	});
+
 	it("allows unknown tools by default", () => {
 		expect(isToolAllowed("unknown_tool", baseConfig)).toBe(true);
 	});
@@ -157,6 +222,60 @@ describe("checkConfirmation", () => {
 		const config = { ...baseConfig, requireConfirm: true };
 		const result = checkConfirmation("coolify_update_database_envs_bulk", { uuid: "db-1" }, config);
 		expect(result.proceed).toBe(true);
+	});
+
+	it("requires confirmation for delete_application_scheduled_task", () => {
+		const config = { ...baseConfig, requireConfirm: true };
+		const result = checkConfirmation(
+			"coolify_delete_application_scheduled_task",
+			{ uuid: "app-1", task_uuid: "task-1" },
+			config,
+		);
+		expect(result.proceed).toBe(false);
+		expect(result.response).toBeDefined();
+	});
+
+	it("requires confirmation for delete_application_storage", () => {
+		const config = { ...baseConfig, requireConfirm: true };
+		const result = checkConfirmation(
+			"coolify_delete_application_storage",
+			{ uuid: "app-1", storage_uuid: "stor-1" },
+			config,
+		);
+		expect(result.proceed).toBe(false);
+		expect(result.response).toBeDefined();
+	});
+
+	it("requires confirmation for delete_github_app", () => {
+		const config = { ...baseConfig, requireConfirm: true };
+		const result = checkConfirmation("coolify_delete_github_app", { id: 42 }, config);
+		expect(result.proceed).toBe(false);
+		expect(result.response).toBeDefined();
+	});
+
+	it("requires confirmation for delete_backup_execution", () => {
+		const config = { ...baseConfig, requireConfirm: true };
+		const result = checkConfirmation(
+			"coolify_delete_backup_execution",
+			{ uuid: "db-1", backup_uuid: "b-1", execution_uuid: "e-1" },
+			config,
+		);
+		expect(result.proceed).toBe(false);
+		expect(result.response).toBeDefined();
+	});
+
+	it("does not require confirmation for write-level scheduled task/storage tools", () => {
+		const config = { ...baseConfig, requireConfirm: true };
+		expect(
+			checkConfirmation("coolify_create_application_scheduled_task", { uuid: "app-1" }, config)
+				.proceed,
+		).toBe(true);
+		expect(
+			checkConfirmation("coolify_create_application_storage", { uuid: "app-1" }, config).proceed,
+		).toBe(true);
+		expect(
+			checkConfirmation("coolify_update_database_backup", { uuid: "db-1" }, config).proceed,
+		).toBe(true);
 	});
 
 	it("proceeds for destructive tools with confirm: true", () => {

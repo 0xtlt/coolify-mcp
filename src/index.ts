@@ -7,15 +7,21 @@ import { registerPrompts } from "./prompts";
 import { registerResources } from "./resources";
 import { registerApplicationTools } from "./tools/applications";
 import { registerDatabaseEnvTools } from "./tools/database-envs";
+import { registerDatabaseStorageTools } from "./tools/database-storages";
 import { registerDatabaseTools } from "./tools/databases";
 import { registerDeploymentTools } from "./tools/deployments";
 import { registerEnvTools } from "./tools/envs";
+import { registerGitHubAppTools } from "./tools/github-apps";
 import { registerLogTools } from "./tools/logs";
 import { registerPrivateKeyTools } from "./tools/private-keys";
 import { registerProjectTools } from "./tools/projects";
+import { registerScheduledTaskTools } from "./tools/scheduled-tasks";
 import { registerServerTools } from "./tools/servers";
 import { registerServiceEnvTools } from "./tools/service-envs";
+import { registerServiceScheduledTaskTools } from "./tools/service-scheduled-tasks";
+import { registerServiceStorageTools } from "./tools/service-storages";
 import { registerServiceTools } from "./tools/services";
+import { registerStorageTools } from "./tools/storages";
 import { registerSystemTools } from "./tools/system";
 import { registerTeamTools } from "./tools/teams";
 
@@ -26,7 +32,7 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "2.3.0",
+			version: "3.0.0",
 		},
 		{
 			instructions: `Coolify MCP server for managing self-hosted PaaS instances.
@@ -64,7 +70,13 @@ async function main() {
 20. **Database env vars**: list_database_envs → create_database_env / update_database_envs_bulk / delete_database_env
 21. **Database/service logs**: get_database_logs / get_service_logs (same filters as get_logs)
 22. **Backup management**: list_database_backups → create_database_backup / delete_database_backup
-23. **Deployment history**: list_application_deployments (by app UUID, with pagination)`,
+23. **Deployment history**: list_application_deployments (by app UUID, with pagination)
+24. **Scheduled tasks**: list_application_scheduled_tasks → create/update/delete_application_scheduled_task → list executions
+25. **Storage/Volumes**: list_application_storages → create/update/delete_application_storage (same for database/service)
+26. **GitHub Apps**: list_github_apps → list_github_app_repositories → list_github_app_branches
+27. **Backup executions**: list_database_backups → list_backup_executions → delete_backup_execution
+28. **Backup schedule**: update_database_backup (modify frequency, enable/disable)
+29. **All resources**: list_resources (aggregate view across all projects)`,
 		},
 	);
 
@@ -72,14 +84,20 @@ async function main() {
 	registerApplicationTools(server, client, config);
 	registerDatabaseTools(server, client, config);
 	registerDatabaseEnvTools(server, client, config);
+	registerDatabaseStorageTools(server, client, config);
 	registerDeploymentTools(server, client, config);
 	registerEnvTools(server, client, config);
+	registerGitHubAppTools(server, client, config);
 	registerLogTools(server, client, config);
 	registerProjectTools(server, client, config);
 	registerPrivateKeyTools(server, client, config);
+	registerScheduledTaskTools(server, client, config);
 	registerServerTools(server, client, config);
 	registerServiceTools(server, client, config);
 	registerServiceEnvTools(server, client, config);
+	registerServiceScheduledTaskTools(server, client, config);
+	registerServiceStorageTools(server, client, config);
+	registerStorageTools(server, client, config);
 	registerSystemTools(server, client, config);
 	registerTeamTools(server, client, config);
 

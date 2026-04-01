@@ -167,10 +167,71 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	// Phase 3: System - read
 	coolify_get_version: { level: "read" },
 	coolify_healthcheck: { level: "read" },
+	coolify_list_resources: { level: "read" },
 	// Phase 3: Teams - read
 	coolify_list_teams: { level: "read" },
 	coolify_get_current_team: { level: "read" },
 	coolify_get_team_members: { level: "read" },
+	// Application Scheduled Tasks
+	coolify_list_application_scheduled_tasks: { level: "read" },
+	coolify_create_application_scheduled_task: { level: "write" },
+	coolify_update_application_scheduled_task: { level: "write" },
+	coolify_delete_application_scheduled_task: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the scheduled task.",
+	},
+	coolify_list_application_scheduled_task_executions: { level: "read" },
+	// Service Scheduled Tasks
+	coolify_list_service_scheduled_tasks: { level: "read" },
+	coolify_create_service_scheduled_task: { level: "write" },
+	coolify_update_service_scheduled_task: { level: "write" },
+	coolify_delete_service_scheduled_task: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the scheduled task.",
+	},
+	coolify_list_service_scheduled_task_executions: { level: "read" },
+	// Application Storages
+	coolify_list_application_storages: { level: "read" },
+	coolify_create_application_storage: { level: "write" },
+	coolify_update_application_storage: { level: "write" },
+	coolify_delete_application_storage: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the storage mount.",
+	},
+	// Database Storages
+	coolify_list_database_storages: { level: "read" },
+	coolify_create_database_storage: { level: "write" },
+	coolify_update_database_storage: { level: "write" },
+	coolify_delete_database_storage: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the storage mount.",
+	},
+	// Service Storages
+	coolify_list_service_storages: { level: "read" },
+	coolify_create_service_storage: { level: "write" },
+	coolify_update_service_storage: { level: "write" },
+	coolify_delete_service_storage: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the storage mount.",
+	},
+	// GitHub Apps
+	coolify_list_github_apps: { level: "read" },
+	coolify_create_github_app: { level: "write" },
+	coolify_update_github_app: { level: "write" },
+	coolify_delete_github_app: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the GitHub App integration.",
+	},
+	coolify_list_github_app_repositories: { level: "read" },
+	coolify_list_github_app_branches: { level: "read" },
+	// Backup Executions
+	coolify_list_backup_executions: { level: "read" },
+	coolify_delete_backup_execution: {
+		level: "destructive",
+		dangerWarning: "Permanently deletes the backup execution record.",
+	},
+	// Backup Schedule Update
+	coolify_update_database_backup: { level: "write" },
 };
 
 export function getToolMeta(name: string): ToolMeta | undefined {
