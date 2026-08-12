@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import type { Config } from "../config";
 import { checkConfirmation, isToolAllowed, readonlyError } from "./safety";
 
@@ -132,6 +132,25 @@ describe("isToolAllowed", () => {
 		expect(isToolAllowed("coolify_list_application_storages", config)).toBe(true);
 		expect(isToolAllowed("coolify_list_database_storages", config)).toBe(true);
 		expect(isToolAllowed("coolify_list_service_storages", config)).toBe(true);
+	});
+
+	it("blocks validate_server in readonly mode (write ability required)", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_validate_server", config)).toBe(false);
+	});
+
+	it("blocks volume backup write/destructive in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_set_application_storage_backup", config)).toBe(false);
+		expect(isToolAllowed("coolify_run_application_storage_backup", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_application_storage_backup", config)).toBe(false);
+		expect(isToolAllowed("coolify_set_database_storage_backup", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_service_storage_backup", config)).toBe(false);
+	});
+
+	it("allows current team members tool in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_get_current_team_members", config)).toBe(true);
 	});
 
 	// GitHub Apps

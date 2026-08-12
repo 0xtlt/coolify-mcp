@@ -1,4 +1,4 @@
-import { describe, test } from "bun:test";
+import { describe, test } from "vitest";
 import { CoolifyApiError } from "../lib/errors";
 import { createTestClient, readState } from "./setup";
 

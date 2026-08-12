@@ -18,13 +18,27 @@ export function registerTeamTools(server: McpServer, client: CoolifyClient, _con
 		},
 	);
 
-	server.tool("coolify_get_current_team", "Get the current authenticated team", {}, async () => {
-		return wrap(() => client.getCurrentTeam());
-	});
+	server.tool(
+		"coolify_get_current_team",
+		"Get the team bound to the API token (GET /team)",
+		{},
+		async () => {
+			return wrap(() => client.getCurrentTeam());
+		},
+	);
+
+	server.tool(
+		"coolify_get_current_team_members",
+		"List members of the team bound to the API token (GET /team/members)",
+		{},
+		async () => {
+			return wrap(() => client.getCurrentTeamMembers());
+		},
+	);
 
 	server.tool(
 		"coolify_get_team_members",
-		"List members of a specific team",
+		"List members of a specific team by ID (GET /teams/{id}/members)",
 		{ team_id: z.number().int().min(0).describe("ID of the team") },
 		async ({ team_id }) => {
 			return wrap(() => client.getTeamMembers(team_id));

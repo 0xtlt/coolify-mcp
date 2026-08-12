@@ -1,9 +1,10 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * Start Docker containers, wait for Coolify API, bootstrap token.
- * Usage: bun scripts/integration-setup.ts
+ * Usage: pnpm run test:integration:setup
  */
 import { writeFileSync } from "node:fs";
+import { run, sleep } from "./spawn.ts";
 
 const COOLIFY_URL = process.env.COOLIFY_TEST_URL ?? "http://localhost:8099";
 const MAX_WAIT_MS = 300_000;
@@ -12,11 +13,12 @@ const STATE_FILE = "/tmp/coolify-integration-state.json";
 
 async function main() {
 	console.log("Starting Docker containers...");
-	const compose = Bun.spawn(
-		["docker", "compose", "-f", "docker-compose.test.yml", "up", "-d"],
-		{ stdout: "inherit", stderr: "inherit" },
+	const compose = await run(
+		"docker",
+		["compose", "-f", "docker-compose.test.yml", "up", "-d"],
+		{ inherit: true },
 	);
-	if ((await compose.exited) !== 0) {
+	if (compose.code !== 0) {
 		console.error("docker compose up failed");
 		process.exit(1);
 	}
@@ -33,7 +35,7 @@ async function main() {
 		} catch {
 			// not ready
 		}
-		await Bun.sleep(POLL_INTERVAL_MS);
+		await sleep(POLL_INTERVAL_MS);
 	}
 
 	if (Date.now() >= deadline) {
@@ -46,26 +48,21 @@ async function main() {
 	const enableDeadline = Date.now() + 60_000;
 	let apiEnabled = false;
 	while (Date.now() < enableDeadline) {
-		const enableApi = Bun.spawn(
-			[
-				"docker",
-				"exec",
-				"coolify-mcp-coolify-1",
-				"php",
-				"artisan",
-				"tinker",
-				"--execute",
-				`$s = \\App\\Models\\InstanceSettings::find(0); if(!$s){echo 'NOT_READY';return;} $s->is_api_enabled = true; $s->save(); echo 'API_ENABLED';`,
-			],
-			{ stdout: "pipe", stderr: "pipe" },
-		);
-		const enableOut = await new Response(enableApi.stdout).text();
-		if (enableOut.includes("API_ENABLED")) {
+		const enableApi = await run("docker", [
+			"exec",
+			"coolify-mcp-coolify-1",
+			"php",
+			"artisan",
+			"tinker",
+			"--execute",
+			`$s = \\App\\Models\\InstanceSettings::find(0); if(!$s){echo 'NOT_READY';return;} $s->is_api_enabled = true; $s->save(); echo 'API_ENABLED';`,
+		]);
+		if (enableApi.stdout.includes("API_ENABLED")) {
 			apiEnabled = true;
 			break;
 		}
 		console.log("InstanceSettings not ready yet, retrying in 3s...");
-		await Bun.sleep(3_000);
+		await sleep(3_000);
 	}
 	if (!apiEnabled) {
 		console.error("Timed out waiting for InstanceSettings to be seeded");
@@ -74,42 +71,36 @@ async function main() {
 	console.log("API enabled.");
 
 	console.log("Creating API token...");
-	const createToken = Bun.spawn(
+	const createToken = await run("docker", [
+		"exec",
+		"coolify-mcp-coolify-1",
+		"php",
+		"artisan",
+		"tinker",
+		"--execute",
 		[
-			"docker",
-			"exec",
-			"coolify-mcp-coolify-1",
-			"php",
-			"artisan",
-			"tinker",
-			"--execute",
-			[
-				"use Illuminate\\Support\\Str;",
-				"use Illuminate\\Support\\Facades\\DB;",
-				"$plain = Str::random(40);",
-				"$hashed = hash('sha256', $plain);",
-				"DB::table('personal_access_tokens')->insert([",
-				"  'tokenable_type' => 'App\\\\Models\\\\User',",
-				"  'tokenable_id' => 0,",
-				"  'team_id' => 0,",
-				"  'name' => 'integration-test',",
-				"  'token' => $hashed,",
-				"  'abilities' => '[\"*\"]',",
-				"  'created_at' => now(),",
-				"  'updated_at' => now(),",
-				"]);",
-				"$id = DB::table('personal_access_tokens')->where('name', 'integration-test')->value('id');",
-				"echo 'TOKEN:' . $id . '|' . $plain;",
-			].join(" "),
-		],
-		{ stdout: "pipe", stderr: "pipe" },
-	);
-	const tokenOut = await new Response(createToken.stdout).text();
-	const tokenMatch = tokenOut.match(/TOKEN:(\S+)/);
+			"use Illuminate\\Support\\Str;",
+			"use Illuminate\\Support\\Facades\\DB;",
+			"$plain = Str::random(40);",
+			"$hashed = hash('sha256', $plain);",
+			"DB::table('personal_access_tokens')->insert([",
+			"  'tokenable_type' => 'App\\\\Models\\\\User',",
+			"  'tokenable_id' => 0,",
+			"  'team_id' => 0,",
+			"  'name' => 'integration-test',",
+			"  'token' => $hashed,",
+			"  'abilities' => '[\"*\"]',",
+			"  'created_at' => now(),",
+			"  'updated_at' => now(),",
+			"]);",
+			"$id = DB::table('personal_access_tokens')->where('name', 'integration-test')->value('id');",
+			"echo 'TOKEN:' . $id . '|' . $plain;",
+		].join(" "),
+	]);
+	const tokenMatch = createToken.stdout.match(/TOKEN:(\S+)/);
 	if (!tokenMatch) {
-		console.error("Failed to create token:", tokenOut);
-		const errOut = await new Response(createToken.stderr).text();
-		console.error(errOut);
+		console.error("Failed to create token:", createToken.stdout);
+		console.error(createToken.stderr);
 		process.exit(1);
 	}
 	const token = tokenMatch[1];

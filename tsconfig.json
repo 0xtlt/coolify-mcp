@@ -12,8 +12,8 @@
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"noFallthroughCasesInSwitch": true,
-		"types": ["bun-types"]
+		"types": ["node", "vitest/globals"]
 	},
-	"include": ["src/**/*"],
-	"exclude": ["node_modules"]
+	"include": ["src/**/*", "vitest.config.ts", "vitest.integration.config.ts"],
+	"exclude": ["node_modules", "dist"]
 }

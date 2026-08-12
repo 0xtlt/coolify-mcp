@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { CoolifyApiError, NetworkError } from "./errors";
 import { errorResponse, formatError, textResponse, wrap, wrapWithActions } from "./wrap";
 

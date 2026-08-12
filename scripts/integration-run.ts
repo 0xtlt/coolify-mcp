@@ -1,8 +1,12 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
- * Run integration test files sequentially (bun test runs in parallel by default).
- * Usage: bun scripts/integration-run.ts
+ * Run integration test files sequentially.
+ * Usage: pnpm run test:integration:run
  */
+import { fileURLToPath } from "node:url";
+import { run } from "./spawn.ts";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
 
 const files = [
 	"01-system",
@@ -30,13 +34,12 @@ let failed = false;
 for (const file of files) {
 	const path = `src/__integration__/${file}.integration.test.ts`;
 	console.log(`\n--- Running ${file} ---`);
-	const proc = Bun.spawn(["bun", "test", "--timeout", "30000", path], {
-		stdout: "inherit",
-		stderr: "inherit",
-		cwd: import.meta.dir.replace("/scripts", ""),
-	});
-	const exitCode = await proc.exited;
-	if (exitCode !== 0) {
+	const result = await run(
+		"pnpm",
+		["exec", "vitest", "run", "--config", "vitest.integration.config.ts", path],
+		{ cwd: root, inherit: true },
+	);
+	if (result.code !== 0) {
 		console.error(`FAILED: ${file}`);
 		failed = true;
 		break;

@@ -43,14 +43,24 @@ export function registerServerTools(server: McpServer, client: CoolifyClient, co
 		},
 	);
 
-	server.tool(
-		"coolify_validate_server",
-		"Validate a Coolify server (checks SSH connectivity and Docker prerequisites)",
-		{ uuid: schemas.uuid.describe("UUID of the server to validate") },
-		async ({ uuid }) => {
-			return wrap(() => client.validateServer(uuid));
-		},
-	);
+	if (isToolAllowed("coolify_validate_server", config)) {
+		server.tool(
+			"coolify_validate_server",
+			"[WRITE] Validate a Coolify server (SSH connectivity and Docker prerequisites). Requires POST on Coolify v4.2+.",
+			{
+				uuid: schemas.uuid.describe("UUID of the server to validate"),
+				install: z
+					.boolean()
+					.optional()
+					.describe("Install missing prerequisites and Docker (may restart Docker)"),
+			},
+			async ({ uuid, install }) => {
+				if (!isToolAllowed("coolify_validate_server", config))
+					return readonlyError("coolify_validate_server");
+				return wrap(() => client.validateServer(uuid, { install }));
+			},
+		);
+	}
 
 	server.tool(
 		"coolify_get_server_resources",

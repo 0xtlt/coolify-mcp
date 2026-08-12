@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import type { DeploymentLog } from "../types/api";
 import { filterLogs, parseLogString } from "./filters";
 

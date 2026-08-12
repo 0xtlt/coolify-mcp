@@ -224,7 +224,9 @@ export interface ScheduledTaskExecution {
 	created_at: string;
 }
 
-// --- Storage/Volumes types ---
+// --- Storage/Volumes types (Coolify v4.3+) ---
+
+export type StorageType = "persistent" | "file";
 
 export interface Storage {
 	uuid: string;
@@ -232,8 +234,19 @@ export interface Storage {
 	mount_path: string;
 	host_path?: string;
 	content?: string;
+	/** Present on normalized list responses; required by create/update APIs. */
+	type?: StorageType;
+	/** Service storages only: owning application/database sub-resource UUID. */
+	resource_uuid?: string;
+	resource_type?: string;
 	created_at: string;
 	updated_at: string;
+}
+
+/** Raw list response from Coolify storage endpoints. */
+export interface StorageListResponse {
+	persistent_storages: Storage[];
+	file_storages: Storage[];
 }
 
 export interface StorageSummary {
@@ -241,6 +254,44 @@ export interface StorageSummary {
 	name: string;
 	mount_path: string;
 	host_path?: string;
+	type?: StorageType;
+	resource_uuid?: string;
+}
+
+export interface VolumeBackupSchedule {
+	uuid: string;
+	message?: string;
+	storage_uuid: string;
+	storage_type: "persistent" | "directory";
+	frequency: string;
+	enabled: boolean;
+	save_s3: boolean;
+	disable_local_backup: boolean;
+	stop_during_backup: boolean;
+	s3_storage_uuid?: string | null;
+	retention_amount_locally: number;
+	retention_days_locally: number;
+	retention_max_storage_locally: number;
+	retention_amount_s3: number;
+	retention_days_s3: number;
+	retention_max_storage_s3: number;
+	timeout: number;
+}
+
+export interface VolumeBackupScheduleInput {
+	frequency: string;
+	enabled?: boolean;
+	save_s3?: boolean;
+	disable_local_backup?: boolean;
+	stop_during_backup?: boolean;
+	s3_storage_uuid?: string | null;
+	retention_amount_locally?: number;
+	retention_days_locally?: number;
+	retention_max_storage_locally?: number;
+	retention_amount_s3?: number;
+	retention_days_s3?: number;
+	retention_max_storage_s3?: number;
+	timeout?: number;
 }
 
 // --- GitHub Apps types ---
@@ -383,7 +434,26 @@ export function toStorageSummary(storage: Storage): StorageSummary {
 		name: storage.name,
 		mount_path: storage.mount_path,
 		host_path: storage.host_path,
+		type: storage.type,
+		resource_uuid: storage.resource_uuid,
 	};
+}
+
+/** Flatten Coolify's `{ persistent_storages, file_storages }` list response. */
+export function normalizeStorageList(
+	response: Storage[] | StorageListResponse | null | undefined,
+): Storage[] {
+	if (!response) return [];
+	if (Array.isArray(response)) return response;
+	const persistent = (response.persistent_storages ?? []).map((s) => ({
+		...s,
+		type: "persistent" as const,
+	}));
+	const files = (response.file_storages ?? []).map((s) => ({
+		...s,
+		type: "file" as const,
+	}));
+	return [...persistent, ...files];
 }
 
 export function toGitHubAppSummary(app: GitHubApp): GitHubAppSummary {
