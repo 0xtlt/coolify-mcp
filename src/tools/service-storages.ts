@@ -7,6 +7,10 @@ import * as schemas from "../lib/schemas";
 import { wrap } from "../lib/wrap";
 import { toStorageSummary } from "../types/api";
 
+const storageType = z
+	.enum(["persistent", "file"])
+	.describe("Storage type: persistent volume or file mount");
+
 export function registerServiceStorageTools(
 	server: McpServer,
 	client: CoolifyClient,
@@ -14,7 +18,7 @@ export function registerServiceStorageTools(
 ) {
 	server.tool(
 		"coolify_list_service_storages",
-		"List all persistent storage mounts for a Coolify service",
+		"List persistent and file storages for a Coolify service (includes sub-resource UUIDs)",
 		{ uuid: schemas.uuid.describe("UUID of the service") },
 		async ({ uuid }) => {
 			return wrap(async () => {
@@ -27,25 +31,59 @@ export function registerServiceStorageTools(
 	if (isToolAllowed("coolify_create_service_storage", config)) {
 		server.tool(
 			"coolify_create_service_storage",
-			"[WRITE] Add a persistent storage mount to a Coolify service",
+			"[WRITE] Add a persistent or file storage mount to a Coolify service sub-resource",
 			{
 				uuid: schemas.uuid.describe("UUID of the service"),
-				name: z.string().min(1).describe("Storage name"),
+				type: storageType,
+				resource_uuid: schemas.uuid.describe(
+					"UUID of the service application or database sub-resource",
+				),
+				name: z
+					.string()
+					.min(1)
+					.optional()
+					.describe("Volume name (required for persistent storages)"),
 				mount_path: z.string().min(1).describe("Container mount path (e.g. /data)"),
-				host_path: z.string().optional().describe("Host path (leave empty for Docker volume)"),
-				content: z.string().optional().describe("File content (for config file mounts)"),
+				host_path: z.string().optional().describe("Host path (persistent only, optional)"),
+				content: z.string().optional().describe("File content (file storages only)"),
+				is_directory: z
+					.boolean()
+					.optional()
+					.describe("Whether this is a directory mount (file only)"),
+				fs_path: z
+					.string()
+					.optional()
+					.describe("Host directory path (required when is_directory is true)"),
 			},
-			async ({ uuid, name, mount_path, host_path, content }) => {
+			async ({
+				uuid,
+				type,
+				resource_uuid,
+				name,
+				mount_path,
+				host_path,
+				content,
+				is_directory,
+				fs_path,
+			}) => {
 				if (!isToolAllowed("coolify_create_service_storage", config))
 					return readonlyError("coolify_create_service_storage");
 				return wrap(async () => {
 					const result = await client.createServiceStorage(uuid, {
+						type,
+						resource_uuid,
 						name,
 						mount_path,
 						host_path,
 						content,
+						is_directory,
+						fs_path,
 					});
-					return { message: `Storage '${name}' created`, uuid: result.uuid };
+					return {
+						message: `Storage created (${type})`,
+						uuid: result.uuid,
+						...result,
+					};
 				});
 			},
 		);
@@ -54,26 +92,37 @@ export function registerServiceStorageTools(
 	if (isToolAllowed("coolify_update_service_storage", config)) {
 		server.tool(
 			"coolify_update_service_storage",
-			"[WRITE] Update a persistent storage mount for a Coolify service",
+			"[WRITE] Update a persistent or file storage for a Coolify service (PATCH body includes storage uuid + type)",
 			{
 				uuid: schemas.uuid.describe("UUID of the service"),
 				storage_uuid: schemas.uuid.describe("UUID of the storage to update"),
-				name: z.string().optional().describe("Storage name"),
+				type: storageType,
+				name: z.string().optional().describe("Volume name (persistent only)"),
 				mount_path: z.string().optional().describe("Container mount path"),
-				host_path: z.string().optional().describe("Host path"),
-				content: z.string().optional().describe("File content"),
-				custom_fields: schemas.customFields,
+				host_path: z.string().nullable().optional().describe("Host path (persistent only)"),
+				content: z.string().nullable().optional().describe("File content (file only)"),
+				is_preview_suffix_enabled: z
+					.boolean()
+					.optional()
+					.describe("Add -pr-N suffix for preview deployments"),
 			},
-			async ({ uuid, storage_uuid, custom_fields, ...fields }) => {
+			async ({ uuid, storage_uuid, type, ...fields }) => {
 				if (!isToolAllowed("coolify_update_service_storage", config))
 					return readonlyError("coolify_update_service_storage");
 				return wrap(async () => {
-					const data: Record<string, unknown> = {};
+					const data: {
+						uuid: string;
+						type: "persistent" | "file";
+						name?: string;
+						mount_path?: string;
+						host_path?: string | null;
+						content?: string | null;
+						is_preview_suffix_enabled?: boolean;
+					} = { uuid: storage_uuid, type };
 					for (const [k, v] of Object.entries(fields)) {
-						if (v !== undefined) data[k] = v;
+						if (v !== undefined) (data as Record<string, unknown>)[k] = v;
 					}
-					if (custom_fields) Object.assign(data, custom_fields);
-					await client.updateServiceStorage(uuid, storage_uuid, data);
+					await client.updateServiceStorage(uuid, data);
 					return `Service storage ${storage_uuid} updated`;
 				});
 			},
@@ -83,7 +132,7 @@ export function registerServiceStorageTools(
 	if (isToolAllowed("coolify_delete_service_storage", config)) {
 		server.tool(
 			"coolify_delete_service_storage",
-			"[DESTRUCTIVE] Remove a persistent storage mount from a Coolify service",
+			"[DESTRUCTIVE] Remove a persistent or file storage mount from a Coolify service",
 			{
 				uuid: schemas.uuid.describe("UUID of the service"),
 				storage_uuid: schemas.uuid.describe("UUID of the storage to delete"),

@@ -5,6 +5,7 @@ import {
 	type Deployment,
 	type Environment,
 	type GitHubApp,
+	normalizeStorageList,
 	type PrivateKey,
 	type Project,
 	type ScheduledTask,
@@ -307,6 +308,7 @@ describe("toStorageSummary", () => {
 		mount_path: "/data",
 		host_path: "/mnt/data",
 		content: "some config",
+		type: "persistent",
 		created_at: "2024-01-01T00:00:00Z",
 		updated_at: "2024-06-15T00:00:00Z",
 	};
@@ -317,6 +319,7 @@ describe("toStorageSummary", () => {
 		expect(summary.name).toBe("app-data");
 		expect(summary.mount_path).toBe("/data");
 		expect(summary.host_path).toBe("/mnt/data");
+		expect(summary.type).toBe("persistent");
 	});
 
 	it("excludes detail fields", () => {
@@ -324,6 +327,47 @@ describe("toStorageSummary", () => {
 		expect("content" in summary).toBe(false);
 		expect("created_at" in summary).toBe(false);
 		expect("updated_at" in summary).toBe(false);
+	});
+});
+
+describe("normalizeStorageList", () => {
+	it("flattens persistent and file storages with type", () => {
+		const result = normalizeStorageList({
+			persistent_storages: [
+				{
+					uuid: "p1",
+					name: "data",
+					mount_path: "/data",
+					created_at: "2024-01-01",
+					updated_at: "2024-01-01",
+				},
+			],
+			file_storages: [
+				{
+					uuid: "f1",
+					name: "cfg",
+					mount_path: "/cfg",
+					created_at: "2024-01-01",
+					updated_at: "2024-01-01",
+				},
+			],
+		});
+		expect(result).toHaveLength(2);
+		expect(result[0].type).toBe("persistent");
+		expect(result[1].type).toBe("file");
+	});
+
+	it("passes through arrays unchanged", () => {
+		const arr: Storage[] = [
+			{
+				uuid: "s1",
+				name: "x",
+				mount_path: "/",
+				created_at: "2024-01-01",
+				updated_at: "2024-01-01",
+			},
+		];
+		expect(normalizeStorageList(arr)).toEqual(arr);
 	});
 });
 

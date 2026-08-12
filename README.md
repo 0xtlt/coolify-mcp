@@ -1,8 +1,10 @@
 # coolify-mcp
 
-MCP server for managing Coolify instances. Control applications, databases, services, servers, and more directly from Claude or any MCP-compatible client.
+MCP server for managing Coolify instances (**v4.3+ API**). Control applications, databases, services, servers, and more directly from Claude or any MCP-compatible client.
 
-**74 tools | 7 resources | 4 prompts**
+**116 tools | 7 resources | 4 prompts**
+
+Requires Coolify **v4.3.0** or newer (`/api/v1`). Legacy GET-based state-changing endpoints are not supported.
 
 ## Installation
 
@@ -115,7 +117,7 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_get_server` | Get server details |
 | `coolify_create_server` | [WRITE] Add a new server (requires SSH key) |
 | `coolify_update_server` | [WRITE] Update server config |
-| `coolify_validate_server` | Check SSH connectivity and Docker |
+| `coolify_validate_server` | [WRITE] Validate SSH connectivity and Docker (POST) |
 | `coolify_get_server_resources` | List all resources on a server |
 | `coolify_get_server_domains` | List all domains on a server |
 | `coolify_delete_server` | [DESTRUCTIVE] Delete a server |
@@ -151,7 +153,7 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_list_deployments` | List currently running/queued deployments |
 | `coolify_list_application_deployments` | List deployment history for an application (with pagination) |
 | `coolify_get_deployment` | Get deployment details |
-| `coolify_trigger_deploy` | [WRITE] Trigger a deployment |
+| `coolify_trigger_deploy` | [WRITE] Trigger a deployment (POST `/deploy`) |
 | `coolify_cancel_deployment` | [WRITE] Cancel a running deployment |
 
 ### Application Env Vars (4)
@@ -181,6 +183,37 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_update_database_envs_bulk` | [WRITE] Bulk update database env vars |
 | `coolify_delete_database_env` | [DESTRUCTIVE] Delete a database env var |
 
+### Storages (12)
+
+| Tool | Description |
+|------|-------------|
+| `coolify_list_application_storages` | List application persistent + file storages |
+| `coolify_create_application_storage` | [WRITE] Create storage (`type`: persistent\|file) |
+| `coolify_update_application_storage` | [WRITE] Update storage (body: uuid + type) |
+| `coolify_delete_application_storage` | [DESTRUCTIVE] Delete application storage |
+| `coolify_list_database_storages` | List database storages |
+| `coolify_create_database_storage` | [WRITE] Create database storage |
+| `coolify_update_database_storage` | [WRITE] Update database storage |
+| `coolify_delete_database_storage` | [DESTRUCTIVE] Delete database storage |
+| `coolify_list_service_storages` | List service storages |
+| `coolify_create_service_storage` | [WRITE] Create service storage (`resource_uuid` required) |
+| `coolify_update_service_storage` | [WRITE] Update service storage |
+| `coolify_delete_service_storage` | [DESTRUCTIVE] Delete service storage |
+
+### Volume Backups (9)
+
+| Tool | Description |
+|------|-------------|
+| `coolify_set_application_storage_backup` | [WRITE] Create/replace application volume backup schedule |
+| `coolify_run_application_storage_backup` | [WRITE] Run on-demand application volume backup |
+| `coolify_delete_application_storage_backup` | [DESTRUCTIVE] Delete application volume backup schedule |
+| `coolify_set_database_storage_backup` | [WRITE] Create/replace database volume backup schedule |
+| `coolify_run_database_storage_backup` | [WRITE] Run on-demand database volume backup |
+| `coolify_delete_database_storage_backup` | [DESTRUCTIVE] Delete database volume backup schedule |
+| `coolify_set_service_storage_backup` | [WRITE] Create/replace service volume backup schedule |
+| `coolify_run_service_storage_backup` | [WRITE] Run on-demand service volume backup |
+| `coolify_delete_service_storage_backup` | [DESTRUCTIVE] Delete service volume backup schedule |
+
 ### Logs (3)
 
 | Tool | Description |
@@ -196,13 +229,14 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_get_version` | Get Coolify instance version |
 | `coolify_healthcheck` | Check if Coolify is healthy |
 
-### Teams (3)
+### Teams (4)
 
 | Tool | Description |
 |------|-------------|
 | `coolify_list_teams` | List all teams |
-| `coolify_get_current_team` | Get current authenticated team |
-| `coolify_get_team_members` | List members of a team |
+| `coolify_get_current_team` | Get token team (`GET /team`) |
+| `coolify_get_current_team_members` | List token team members (`GET /team/members`) |
+| `coolify_get_team_members` | List members of a team by ID |
 
 ## Available Resources
 

@@ -17,9 +17,14 @@ import type {
 	ServerInfo,
 	Service,
 	Storage,
+	StorageListResponse,
+	StorageType,
 	Team,
 	TeamMember,
+	VolumeBackupSchedule,
+	VolumeBackupScheduleInput,
 } from "./types/api";
+import { normalizeStorageList } from "./types/api";
 
 export class CoolifyClient {
 	private baseUrl: string;
@@ -151,9 +156,10 @@ export class CoolifyClient {
 	): Promise<{
 		deployments: Array<{ message: string; resource_uuid: string; deployment_uuid: string }>;
 	}> {
-		const params = new URLSearchParams({ uuid });
-		if (force) params.set("force", "true");
-		return this.request("GET", `/deploy?${params.toString()}`);
+		// Coolify v4.2+: state-changing endpoints require POST (GET returns 405).
+		const body: Record<string, unknown> = { uuid };
+		if (force) body.force = true;
+		return this.request("POST", "/deploy", body);
 	}
 
 	async cancelDeployment(uuid: string): Promise<{ message: string }> {
@@ -174,8 +180,10 @@ export class CoolifyClient {
 		return this.request<ServerInfo>("GET", `/servers/${uuid}`);
 	}
 
-	async validateServer(uuid: string): Promise<{ message: string }> {
-		return this.request("GET", `/servers/${uuid}/validate`);
+	async validateServer(uuid: string, opts?: { install?: boolean }): Promise<{ message: string }> {
+		// Coolify v4.2+: POST only (GET returns 405 via post_required).
+		const body = opts?.install !== undefined ? { install: opts.install } : undefined;
+		return this.request("POST", `/servers/${uuid}/validate`, body);
 	}
 
 	async getServerResources(uuid: string): Promise<unknown[]> {
@@ -228,7 +236,7 @@ export class CoolifyClient {
 	}
 
 	async startDatabase(uuid: string): Promise<{ message: string }> {
-		return this.request("GET", `/databases/${uuid}/start`);
+		return this.request("POST", `/databases/${uuid}/start`);
 	}
 
 	async stopDatabase(
@@ -239,11 +247,11 @@ export class CoolifyClient {
 		if (opts?.docker_cleanup !== undefined)
 			params.set("docker_cleanup", String(opts.docker_cleanup));
 		const qs = params.toString();
-		return this.request("GET", `/databases/${uuid}/stop${qs ? `?${qs}` : ""}`);
+		return this.request("POST", `/databases/${uuid}/stop${qs ? `?${qs}` : ""}`);
 	}
 
 	async restartDatabase(uuid: string): Promise<{ message: string }> {
-		return this.request("GET", `/databases/${uuid}/restart`);
+		return this.request("POST", `/databases/${uuid}/restart`);
 	}
 
 	async updateDatabase(uuid: string, data: Record<string, unknown>): Promise<Database> {
@@ -528,13 +536,17 @@ export class CoolifyClient {
 		return this.request<string>("GET", "/health");
 	}
 
-	// Teams
+	// Teams (current token team uses /team; /teams/current is deprecated)
 	async listTeams(): Promise<Team[]> {
 		return this.request<Team[]>("GET", "/teams");
 	}
 
 	async getCurrentTeam(): Promise<Team> {
-		return this.request<Team>("GET", "/teams/current");
+		return this.request<Team>("GET", "/team");
+	}
+
+	async getCurrentTeamMembers(): Promise<TeamMember[]> {
+		return this.request<TeamMember[]>("GET", "/team/members");
 	}
 
 	async getTeamMembers(teamId: number): Promise<TeamMember[]> {
@@ -634,28 +646,44 @@ export class CoolifyClient {
 		);
 	}
 
-	// Application Storages
+	// Application Storages (Coolify v4.3: list returns {persistent_storages,file_storages};
+	// create requires type; update is PATCH /storages with uuid+type in body)
 	async listApplicationStorages(uuid: string): Promise<Storage[]> {
-		return this.request<Storage[]>("GET", `/applications/${uuid}/storages`);
+		const response = await this.request<StorageListResponse | Storage[]>(
+			"GET",
+			`/applications/${uuid}/storages`,
+		);
+		return normalizeStorageList(response);
 	}
 
 	async createApplicationStorage(
 		uuid: string,
-		data: { name: string; mount_path: string; host_path?: string; content?: string },
-	): Promise<{ uuid: string }> {
-		return this.request<{ uuid: string }>("POST", `/applications/${uuid}/storages`, data);
+		data: {
+			type: StorageType;
+			name?: string;
+			mount_path: string;
+			host_path?: string;
+			content?: string;
+			is_directory?: boolean;
+			fs_path?: string;
+		},
+	): Promise<{ uuid?: string } & Record<string, unknown>> {
+		return this.request("POST", `/applications/${uuid}/storages`, data);
 	}
 
 	async updateApplicationStorage(
 		uuid: string,
-		storageUuid: string,
-		data: Record<string, unknown>,
-	): Promise<{ uuid: string }> {
-		return this.request<{ uuid: string }>(
-			"PATCH",
-			`/applications/${uuid}/storages/${storageUuid}`,
-			data,
-		);
+		data: {
+			uuid: string;
+			type: StorageType;
+			name?: string;
+			mount_path?: string;
+			host_path?: string | null;
+			content?: string | null;
+			is_preview_suffix_enabled?: boolean;
+		},
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/applications/${uuid}/storages`, data);
 	}
 
 	async deleteApplicationStorage(uuid: string, storageUuid: string): Promise<{ message: string }> {
@@ -664,26 +692,41 @@ export class CoolifyClient {
 
 	// Database Storages
 	async listDatabaseStorages(uuid: string): Promise<Storage[]> {
-		return this.request<Storage[]>("GET", `/databases/${uuid}/storages`);
+		const response = await this.request<StorageListResponse | Storage[]>(
+			"GET",
+			`/databases/${uuid}/storages`,
+		);
+		return normalizeStorageList(response);
 	}
 
 	async createDatabaseStorage(
 		uuid: string,
-		data: { name: string; mount_path: string; host_path?: string; content?: string },
-	): Promise<{ uuid: string }> {
-		return this.request<{ uuid: string }>("POST", `/databases/${uuid}/storages`, data);
+		data: {
+			type: StorageType;
+			name?: string;
+			mount_path: string;
+			host_path?: string;
+			content?: string;
+			is_directory?: boolean;
+			fs_path?: string;
+		},
+	): Promise<{ uuid?: string } & Record<string, unknown>> {
+		return this.request("POST", `/databases/${uuid}/storages`, data);
 	}
 
 	async updateDatabaseStorage(
 		uuid: string,
-		storageUuid: string,
-		data: Record<string, unknown>,
-	): Promise<{ uuid: string }> {
-		return this.request<{ uuid: string }>(
-			"PATCH",
-			`/databases/${uuid}/storages/${storageUuid}`,
-			data,
-		);
+		data: {
+			uuid: string;
+			type: StorageType;
+			name?: string;
+			mount_path?: string;
+			host_path?: string | null;
+			content?: string | null;
+			is_preview_suffix_enabled?: boolean;
+		},
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/databases/${uuid}/storages`, data);
 	}
 
 	async deleteDatabaseStorage(uuid: string, storageUuid: string): Promise<{ message: string }> {
@@ -692,30 +735,107 @@ export class CoolifyClient {
 
 	// Service Storages
 	async listServiceStorages(uuid: string): Promise<Storage[]> {
-		return this.request<Storage[]>("GET", `/services/${uuid}/storages`);
+		const response = await this.request<StorageListResponse | Storage[]>(
+			"GET",
+			`/services/${uuid}/storages`,
+		);
+		return normalizeStorageList(response);
 	}
 
 	async createServiceStorage(
 		uuid: string,
-		data: { name: string; mount_path: string; host_path?: string; content?: string },
-	): Promise<{ uuid: string }> {
-		return this.request<{ uuid: string }>("POST", `/services/${uuid}/storages`, data);
+		data: {
+			type: StorageType;
+			resource_uuid: string;
+			name?: string;
+			mount_path: string;
+			host_path?: string;
+			content?: string;
+			is_directory?: boolean;
+			fs_path?: string;
+		},
+	): Promise<{ uuid?: string } & Record<string, unknown>> {
+		return this.request("POST", `/services/${uuid}/storages`, data);
 	}
 
 	async updateServiceStorage(
 		uuid: string,
-		storageUuid: string,
-		data: Record<string, unknown>,
-	): Promise<{ uuid: string }> {
-		return this.request<{ uuid: string }>(
-			"PATCH",
-			`/services/${uuid}/storages/${storageUuid}`,
-			data,
-		);
+		data: {
+			uuid: string;
+			type: StorageType;
+			name?: string;
+			mount_path?: string;
+			host_path?: string | null;
+			content?: string | null;
+			is_preview_suffix_enabled?: boolean;
+		},
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/services/${uuid}/storages`, data);
 	}
 
 	async deleteServiceStorage(uuid: string, storageUuid: string): Promise<{ message: string }> {
 		return this.request("DELETE", `/services/${uuid}/storages/${storageUuid}`);
+	}
+
+	// Volume / storage backups (Coolify v4.3+)
+	async upsertApplicationStorageBackup(
+		uuid: string,
+		storageUuid: string,
+		data: VolumeBackupScheduleInput,
+	): Promise<VolumeBackupSchedule> {
+		return this.request("PUT", `/applications/${uuid}/storages/${storageUuid}/backups`, data);
+	}
+
+	async runApplicationStorageBackup(
+		uuid: string,
+		storageUuid: string,
+	): Promise<{ message: string }> {
+		return this.request("POST", `/applications/${uuid}/storages/${storageUuid}/backups/run`);
+	}
+
+	async deleteApplicationStorageBackup(
+		uuid: string,
+		storageUuid: string,
+	): Promise<{ message: string }> {
+		return this.request("DELETE", `/applications/${uuid}/storages/${storageUuid}/backups`);
+	}
+
+	async upsertDatabaseStorageBackup(
+		uuid: string,
+		storageUuid: string,
+		data: VolumeBackupScheduleInput,
+	): Promise<VolumeBackupSchedule> {
+		return this.request("PUT", `/databases/${uuid}/storages/${storageUuid}/backups`, data);
+	}
+
+	async runDatabaseStorageBackup(uuid: string, storageUuid: string): Promise<{ message: string }> {
+		return this.request("POST", `/databases/${uuid}/storages/${storageUuid}/backups/run`);
+	}
+
+	async deleteDatabaseStorageBackup(
+		uuid: string,
+		storageUuid: string,
+	): Promise<{ message: string }> {
+		return this.request("DELETE", `/databases/${uuid}/storages/${storageUuid}/backups`);
+	}
+
+	async upsertServiceStorageBackup(
+		uuid: string,
+		storageUuid: string,
+		data: VolumeBackupScheduleInput,
+	): Promise<VolumeBackupSchedule> {
+		return this.request("PUT", `/services/${uuid}/storages/${storageUuid}/backups`, data);
+	}
+
+	async runServiceStorageBackup(uuid: string, storageUuid: string): Promise<{ message: string }> {
+		return this.request("POST", `/services/${uuid}/storages/${storageUuid}/backups/run`);
+	}
+
+	async deleteServiceStorageBackup(
+		uuid: string,
+		storageUuid: string,
+	): Promise<{ message: string }> {
+		return this.request("DELETE", `/services/${uuid}/storages/${storageUuid}/backups`);
 	}
 
 	// GitHub Apps

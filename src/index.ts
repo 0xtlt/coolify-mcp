@@ -24,6 +24,7 @@ import { registerServiceTools } from "./tools/services";
 import { registerStorageTools } from "./tools/storages";
 import { registerSystemTools } from "./tools/system";
 import { registerTeamTools } from "./tools/teams";
+import { registerVolumeBackupTools } from "./tools/volume-backups";
 
 async function main() {
 	const config = loadConfig();
@@ -32,10 +33,10 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "3.0.0",
+			version: "4.0.0",
 		},
 		{
-			instructions: `Coolify MCP server for managing self-hosted PaaS instances.
+			instructions: `Coolify MCP server for managing self-hosted PaaS instances (Coolify API v4.3+).
 
 ## Safety Modes
 - **COOLIFY_READONLY=true**: Only read operations are available (list, get, logs)
@@ -61,7 +62,7 @@ async function main() {
 11. **Create application**: list_servers → list_projects → create_application (source_type + params)
 12. **Create database**: list_servers → list_projects → create_database (type + params)
 13. **Create service**: list_servers → list_projects → create_service (type + params)
-14. **Teams**: list_teams → get_current_team → get_team_members
+14. **Teams**: list_teams → get_current_team → get_current_team_members / get_team_members
 15. **System info**: get_version / healthcheck
 16. **Private keys**: list_private_keys → get_private_key → create/update/delete_private_key
 17. **Server CRUD**: list_servers → create_server / update_server / delete_server
@@ -72,11 +73,12 @@ async function main() {
 22. **Backup management**: list_database_backups → create_database_backup / delete_database_backup
 23. **Deployment history**: list_application_deployments (by app UUID, with pagination)
 24. **Scheduled tasks**: list_application_scheduled_tasks → create/update/delete_application_scheduled_task → list executions
-25. **Storage/Volumes**: list_application_storages → create/update/delete_application_storage (same for database/service)
-26. **GitHub Apps**: list_github_apps → list_github_app_repositories → list_github_app_branches
-27. **Backup executions**: list_database_backups → list_backup_executions → delete_backup_execution
-28. **Backup schedule**: update_database_backup (modify frequency, enable/disable)
-29. **All resources**: list_resources (aggregate view across all projects)`,
+25. **Storage/Volumes**: list_application_storages → create/update/delete_application_storage (type required; same for database/service)
+26. **Volume backups**: set_*_storage_backup → run_*_storage_backup / delete_*_storage_backup
+27. **GitHub Apps**: list_github_apps → list_github_app_repositories → list_github_app_branches
+28. **Backup executions**: list_database_backups → list_backup_executions → delete_backup_execution
+29. **Backup schedule**: update_database_backup (modify frequency, enable/disable)
+30. **All resources**: list_resources (aggregate view across all projects)`,
 		},
 	);
 
@@ -98,6 +100,7 @@ async function main() {
 	registerServiceScheduledTaskTools(server, client, config);
 	registerServiceStorageTools(server, client, config);
 	registerStorageTools(server, client, config);
+	registerVolumeBackupTools(server, client, config);
 	registerSystemTools(server, client, config);
 	registerTeamTools(server, client, config);
 

@@ -7,10 +7,14 @@ import * as schemas from "../lib/schemas";
 import { wrap } from "../lib/wrap";
 import { toStorageSummary } from "../types/api";
 
+const storageType = z
+	.enum(["persistent", "file"])
+	.describe("Storage type: persistent volume or file mount");
+
 export function registerStorageTools(server: McpServer, client: CoolifyClient, config: Config) {
 	server.tool(
 		"coolify_list_application_storages",
-		"List all persistent storage mounts for a Coolify application",
+		"List persistent and file storages for a Coolify application",
 		{ uuid: schemas.uuid.describe("UUID of the application") },
 		async ({ uuid }) => {
 			return wrap(async () => {
@@ -23,25 +27,45 @@ export function registerStorageTools(server: McpServer, client: CoolifyClient, c
 	if (isToolAllowed("coolify_create_application_storage", config)) {
 		server.tool(
 			"coolify_create_application_storage",
-			"[WRITE] Add a persistent storage mount to a Coolify application",
+			"[WRITE] Add a persistent or file storage mount to a Coolify application",
 			{
 				uuid: schemas.uuid.describe("UUID of the application"),
-				name: z.string().min(1).describe("Storage name"),
+				type: storageType,
+				name: z
+					.string()
+					.min(1)
+					.optional()
+					.describe("Volume name (required for persistent storages)"),
 				mount_path: z.string().min(1).describe("Container mount path (e.g. /data)"),
-				host_path: z.string().optional().describe("Host path (leave empty for Docker volume)"),
-				content: z.string().optional().describe("File content (for config file mounts)"),
+				host_path: z.string().optional().describe("Host path (persistent only, optional)"),
+				content: z.string().optional().describe("File content (file storages only)"),
+				is_directory: z
+					.boolean()
+					.optional()
+					.describe("Whether this is a directory mount (file only)"),
+				fs_path: z
+					.string()
+					.optional()
+					.describe("Host directory path (required when is_directory is true)"),
 			},
-			async ({ uuid, name, mount_path, host_path, content }) => {
+			async ({ uuid, type, name, mount_path, host_path, content, is_directory, fs_path }) => {
 				if (!isToolAllowed("coolify_create_application_storage", config))
 					return readonlyError("coolify_create_application_storage");
 				return wrap(async () => {
 					const result = await client.createApplicationStorage(uuid, {
+						type,
 						name,
 						mount_path,
 						host_path,
 						content,
+						is_directory,
+						fs_path,
 					});
-					return { message: `Storage '${name}' created`, uuid: result.uuid };
+					return {
+						message: `Storage created (${type})`,
+						uuid: result.uuid,
+						...result,
+					};
 				});
 			},
 		);
@@ -50,26 +74,37 @@ export function registerStorageTools(server: McpServer, client: CoolifyClient, c
 	if (isToolAllowed("coolify_update_application_storage", config)) {
 		server.tool(
 			"coolify_update_application_storage",
-			"[WRITE] Update a persistent storage mount for a Coolify application",
+			"[WRITE] Update a persistent or file storage for a Coolify application (PATCH body includes storage uuid + type)",
 			{
 				uuid: schemas.uuid.describe("UUID of the application"),
 				storage_uuid: schemas.uuid.describe("UUID of the storage to update"),
-				name: z.string().optional().describe("Storage name"),
+				type: storageType,
+				name: z.string().optional().describe("Volume name (persistent only)"),
 				mount_path: z.string().optional().describe("Container mount path"),
-				host_path: z.string().optional().describe("Host path"),
-				content: z.string().optional().describe("File content"),
-				custom_fields: schemas.customFields,
+				host_path: z.string().nullable().optional().describe("Host path (persistent only)"),
+				content: z.string().nullable().optional().describe("File content (file only)"),
+				is_preview_suffix_enabled: z
+					.boolean()
+					.optional()
+					.describe("Add -pr-N suffix for preview deployments"),
 			},
-			async ({ uuid, storage_uuid, custom_fields, ...fields }) => {
+			async ({ uuid, storage_uuid, type, ...fields }) => {
 				if (!isToolAllowed("coolify_update_application_storage", config))
 					return readonlyError("coolify_update_application_storage");
 				return wrap(async () => {
-					const data: Record<string, unknown> = {};
+					const data: {
+						uuid: string;
+						type: "persistent" | "file";
+						name?: string;
+						mount_path?: string;
+						host_path?: string | null;
+						content?: string | null;
+						is_preview_suffix_enabled?: boolean;
+					} = { uuid: storage_uuid, type };
 					for (const [k, v] of Object.entries(fields)) {
-						if (v !== undefined) data[k] = v;
+						if (v !== undefined) (data as Record<string, unknown>)[k] = v;
 					}
-					if (custom_fields) Object.assign(data, custom_fields);
-					await client.updateApplicationStorage(uuid, storage_uuid, data);
+					await client.updateApplicationStorage(uuid, data);
 					return `Application storage ${storage_uuid} updated`;
 				});
 			},
@@ -79,7 +114,7 @@ export function registerStorageTools(server: McpServer, client: CoolifyClient, c
 	if (isToolAllowed("coolify_delete_application_storage", config)) {
 		server.tool(
 			"coolify_delete_application_storage",
-			"[DESTRUCTIVE] Remove a persistent storage mount from a Coolify application",
+			"[DESTRUCTIVE] Remove a persistent or file storage mount from a Coolify application",
 			{
 				uuid: schemas.uuid.describe("UUID of the application"),
 				storage_uuid: schemas.uuid.describe("UUID of the storage to delete"),

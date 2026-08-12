@@ -68,10 +68,48 @@ describe("CoolifyClient", () => {
 
 		await client.triggerDeploy("app-uuid", true);
 
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/deploy");
+		expect(options.method).toBe("POST");
+		expect(JSON.parse(options.body as string)).toEqual({ uuid: "app-uuid", force: true });
+	});
+
+	it("uses POST for validateServer", async () => {
+		mockFetch(new Response('{"message":"Validation started."}', { status: 200 }));
+		await client.validateServer("srv-1", { install: true });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/servers/srv-1/validate");
+		expect(options.method).toBe("POST");
+		expect(JSON.parse(options.body as string)).toEqual({ install: true });
+	});
+
+	it("uses POST for database lifecycle actions", async () => {
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.startDatabase("db-1");
+		expect(fetchCalls[0][1].method).toBe("POST");
+		expect(fetchCalls[0][0]).toBe("https://coolify.example.com/api/v1/databases/db-1/start");
+
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.stopDatabase("db-1");
+		expect(fetchCalls[0][1].method).toBe("POST");
+
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.restartDatabase("db-1");
+		expect(fetchCalls[0][1].method).toBe("POST");
+	});
+
+	it("uses current /team endpoint for getCurrentTeam", async () => {
+		mockFetch(new Response('{"id":1,"name":"root"}', { status: 200 }));
+		await client.getCurrentTeam();
 		const [url] = fetchCalls[0];
-		expect(url.includes("/deploy?")).toBe(true);
-		expect(url.includes("uuid=app-uuid")).toBe(true);
-		expect(url.includes("force=true")).toBe(true);
+		expect(url).toBe("https://coolify.example.com/api/v1/team");
+	});
+
+	it("uses /team/members for getCurrentTeamMembers", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.getCurrentTeamMembers();
+		const [url] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/team/members");
 	});
 
 	it("throws CoolifyApiError on 401", async () => {
@@ -409,27 +447,72 @@ describe("CoolifyClient", () => {
 	});
 
 	// Application Storages
-	it("constructs correct URL for listApplicationStorages", async () => {
-		mockFetch(new Response("[]", { status: 200 }));
-		await client.listApplicationStorages("app-1");
+	it("normalizes listApplicationStorages response", async () => {
+		mockFetch(
+			new Response(
+				JSON.stringify({
+					persistent_storages: [
+						{
+							uuid: "p1",
+							name: "data",
+							mount_path: "/data",
+							created_at: "2024-01-01",
+							updated_at: "2024-01-01",
+						},
+					],
+					file_storages: [
+						{
+							uuid: "f1",
+							name: "config",
+							mount_path: "/etc/app",
+							created_at: "2024-01-01",
+							updated_at: "2024-01-01",
+						},
+					],
+				}),
+				{ status: 200 },
+			),
+		);
+		const storages = await client.listApplicationStorages("app-1");
 		const [url] = fetchCalls[0];
 		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages");
+		expect(storages).toHaveLength(2);
+		expect(storages[0].type).toBe("persistent");
+		expect(storages[1].type).toBe("file");
 	});
 
-	it("uses POST for createApplicationStorage", async () => {
+	it("uses POST for createApplicationStorage with type", async () => {
 		mockFetch(new Response('{"uuid":"stor-1"}', { status: 200 }));
-		await client.createApplicationStorage("app-1", { name: "data", mount_path: "/data" });
+		await client.createApplicationStorage("app-1", {
+			type: "persistent",
+			name: "data",
+			mount_path: "/data",
+		});
 		const [url, options] = fetchCalls[0];
 		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages");
 		expect(options.method).toBe("POST");
+		expect(JSON.parse(options.body as string)).toEqual({
+			type: "persistent",
+			name: "data",
+			mount_path: "/data",
+		});
 	});
 
-	it("uses PATCH for updateApplicationStorage with storage UUID in path", async () => {
+	it("uses PATCH /storages with uuid+type in body for updateApplicationStorage", async () => {
 		mockFetch(new Response('{"uuid":"stor-1"}', { status: 200 }));
-		await client.updateApplicationStorage("app-1", "stor-1", { name: "data-v2" });
+		await client.updateApplicationStorage("app-1", {
+			uuid: "stor-1",
+			type: "persistent",
+			name: "data-v2",
+		});
 		const [url, options] = fetchCalls[0];
-		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages/stor-1");
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/storages");
 		expect(options.method).toBe("PATCH");
+		expect(JSON.parse(options.body as string)).toEqual({
+			uuid: "stor-1",
+			type: "persistent",
+			name: "data-v2",
+		});
 	});
 
 	it("uses DELETE for deleteApplicationStorage with storage UUID in path", async () => {
@@ -440,9 +523,26 @@ describe("CoolifyClient", () => {
 		expect(options.method).toBe("DELETE");
 	});
 
+	it("uses PUT for upsertApplicationStorageBackup", async () => {
+		mockFetch(new Response('{"uuid":"sched-1","message":"ok"}', { status: 200 }));
+		await client.upsertApplicationStorageBackup("app-1", "stor-1", {
+			frequency: "0 2 * * *",
+			enabled: true,
+		});
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/storages/stor-1/backups",
+		);
+		expect(options.method).toBe("PUT");
+	});
+
 	// Database Storages
 	it("constructs correct URL for listDatabaseStorages", async () => {
-		mockFetch(new Response("[]", { status: 200 }));
+		mockFetch(
+			new Response(JSON.stringify({ persistent_storages: [], file_storages: [] }), {
+				status: 200,
+			}),
+		);
 		await client.listDatabaseStorages("db-1");
 		const [url] = fetchCalls[0];
 		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/storages");
@@ -458,10 +558,26 @@ describe("CoolifyClient", () => {
 
 	// Service Storages
 	it("constructs correct URL for listServiceStorages", async () => {
-		mockFetch(new Response("[]", { status: 200 }));
+		mockFetch(
+			new Response(JSON.stringify({ persistent_storages: [], file_storages: [] }), {
+				status: 200,
+			}),
+		);
 		await client.listServiceStorages("svc-1");
 		const [url] = fetchCalls[0];
 		expect(url).toBe("https://coolify.example.com/api/v1/services/svc-1/storages");
+	});
+
+	it("requires resource_uuid when creating service storage", async () => {
+		mockFetch(new Response('{"uuid":"stor-1"}', { status: 200 }));
+		await client.createServiceStorage("svc-1", {
+			type: "persistent",
+			resource_uuid: "sub-1",
+			name: "data",
+			mount_path: "/data",
+		});
+		const [, options] = fetchCalls[0];
+		expect(JSON.parse(options.body as string).resource_uuid).toBe("sub-1");
 	});
 
 	// GitHub Apps

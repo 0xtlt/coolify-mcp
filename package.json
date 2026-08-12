@@ -1,7 +1,7 @@
 {
 	"name": "mcp-coolify",
-	"version": "3.0.0",
-	"description": "MCP server for Coolify. Manage applications, databases, services, deployments, and servers from any MCP-compatible client.",
+	"version": "4.0.0",
+	"description": "MCP server for Coolify v4.3+. Manage applications, databases, services, deployments, and servers from any MCP-compatible client.",
 	"type": "module",
 	"main": "dist/index.js",
 	"bin": {

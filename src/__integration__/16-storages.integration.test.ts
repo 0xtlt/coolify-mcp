@@ -27,11 +27,12 @@ describe("16 - Storages", () => {
 		if (!applicationUuid) return;
 		try {
 			const result = await client.createApplicationStorage(applicationUuid, {
+				type: "persistent",
 				name: "integration-test-storage",
 				mount_path: "/test-data",
 			});
 			expect(result).toHaveProperty("uuid");
-			storageUuid = result.uuid;
+			if (result.uuid) storageUuid = result.uuid;
 		} catch (error) {
 			if (error instanceof CoolifyApiError && [404, 422].includes(error.statusCode)) {
 				console.log(`Storages create skipped (${error.statusCode}): ${error.responseBody}`);

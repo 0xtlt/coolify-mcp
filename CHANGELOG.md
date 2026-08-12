@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-08-12
+
+Aligned with Coolify **v4.3.0** / `main` API (`routes/api.php` + OpenAPI). Requires Coolify v4.3+.
+
+### Breaking
+
+- State-changing calls that still used **GET** now use **POST** (Coolify returns `405` on legacy GET):
+  - `POST /deploy` (was GET)
+  - `POST /servers/{uuid}/validate` (was GET)
+  - `POST /databases/{uuid}/start|stop|restart` (was GET)
+- Current team endpoint is **`GET /team`** (deprecated `GET /teams/current` no longer used)
+- Storage APIs match Coolify v4.3 shapes:
+  - List returns `{ persistent_storages, file_storages }` (normalized by the client)
+  - Create requires `type` (`persistent` | `file`); service create also requires `resource_uuid`
+  - Update is `PATCH /{resource}/{uuid}/storages` with `uuid` + `type` in the body (not in the path)
+- `coolify_validate_server` is a **write** tool (API requires write ability)
+
+### Added
+
+- Volume/storage backup tools (Coolify v4.3 scheduled volume backups): set / run / delete for application, database, and service storages
+- `coolify_get_current_team_members` (`GET /team/members`)
+- Optional `install` flag on server validation
+
 ## [1.1.0] - 2026-02-06
 
 ### Added

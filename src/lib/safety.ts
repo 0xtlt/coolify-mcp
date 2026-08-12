@@ -78,7 +78,7 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	// Servers - read
 	coolify_list_servers: { level: "read" },
 	coolify_get_server: { level: "read" },
-	coolify_validate_server: { level: "read" },
+	coolify_validate_server: { level: "write" },
 	coolify_get_server_resources: { level: "read" },
 	coolify_get_server_domains: { level: "read" },
 	// Projects & Environments - read
@@ -171,6 +171,7 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	// Phase 3: Teams - read
 	coolify_list_teams: { level: "read" },
 	coolify_get_current_team: { level: "read" },
+	coolify_get_current_team_members: { level: "read" },
 	coolify_get_team_members: { level: "read" },
 	// Application Scheduled Tasks
 	coolify_list_application_scheduled_tasks: { level: "read" },
@@ -213,6 +214,25 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	coolify_delete_service_storage: {
 		level: "destructive",
 		dangerWarning: "Permanently deletes the storage mount.",
+	},
+	// Volume / storage backups (Coolify v4.3+)
+	coolify_set_application_storage_backup: { level: "write" },
+	coolify_run_application_storage_backup: { level: "write" },
+	coolify_delete_application_storage_backup: {
+		level: "destructive",
+		dangerWarning: "Deletes the storage backup schedule and its local/S3 archives.",
+	},
+	coolify_set_database_storage_backup: { level: "write" },
+	coolify_run_database_storage_backup: { level: "write" },
+	coolify_delete_database_storage_backup: {
+		level: "destructive",
+		dangerWarning: "Deletes the storage backup schedule and its local/S3 archives.",
+	},
+	coolify_set_service_storage_backup: { level: "write" },
+	coolify_run_service_storage_backup: { level: "write" },
+	coolify_delete_service_storage_backup: {
+		level: "destructive",
+		dangerWarning: "Deletes the storage backup schedule and its local/S3 archives.",
 	},
 	// GitHub Apps
 	coolify_list_github_apps: { level: "read" },
