@@ -1,9 +1,24 @@
+// @ts-check
+
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+/** @typedef {"auto" | "current" | "patch" | "minor" | "major"} ReleaseMode */
+/** @typedef {"patch" | "minor" | "major"} VersionBump */
+/** @typedef {{ body: string; subject: string }} Commit */
+/**
+ * @typedef ReleaseResolution
+ * @property {"current" | "none" | VersionBump} bump
+ * @property {number} commitCount
+ * @property {boolean} shouldRelease
+ * @property {string} version
+ */
+
 const VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+/** @type {ReadonlySet<string>} */
 const RELEASE_MODES = new Set(["auto", "current", "patch", "minor", "major"]);
+/** @type {ReadonlyMap<string, VersionBump>} */
 const RELEASE_TYPES = new Map([
 	["feat", "minor"],
 	["fix", "patch"],
@@ -12,6 +27,18 @@ const RELEASE_TYPES = new Map([
 	["deps", "patch"],
 ]);
 
+/**
+ * @param {string} value
+ * @returns {value is ReleaseMode}
+ */
+function isReleaseMode(value) {
+	return RELEASE_MODES.has(value);
+}
+
+/**
+ * @param {string} version
+ * @returns {[number, number, number]}
+ */
 function parseVersion(version) {
 	const match = VERSION_PATTERN.exec(version);
 
@@ -19,9 +46,13 @@ function parseVersion(version) {
 		throw new Error(`Expected a stable semantic version, received "${version}"`);
 	}
 
-	return match.slice(1).map(Number);
+	return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
+/**
+ * @param {string} left
+ * @param {string} right
+ */
 export function compareVersions(left, right) {
 	const leftParts = parseVersion(left);
 	const rightParts = parseVersion(right);
@@ -35,6 +66,10 @@ export function compareVersions(left, right) {
 	return 0;
 }
 
+/**
+ * @param {string} version
+ * @param {VersionBump} bump
+ */
 export function bumpVersion(version, bump) {
 	let [major, minor, patch] = parseVersion(version);
 
@@ -54,11 +89,17 @@ export function bumpVersion(version, bump) {
 	return `${major}.${minor}.${patch}`;
 }
 
+/** @param {string} subject */
 function conventionalHeader(subject) {
 	return /^(?<type>[A-Za-z][\w-]*)(?:\([^\r\n)]+\))?(?<breaking>!)?:\s+\S/.exec(subject);
 }
 
+/**
+ * @param {Commit[]} commits
+ * @returns {VersionBump | null}
+ */
 export function determineAutomaticBump(commits) {
+	/** @type {"minor" | "patch" | null} */
 	let selectedBump = null;
 
 	for (const commit of commits) {
@@ -82,6 +123,10 @@ export function determineAutomaticBump(commits) {
 	return selectedBump;
 }
 
+/**
+ * @param {{ baseVersion: string; commits: Commit[]; currentVersion: string; mode: ReleaseMode }} options
+ * @returns {ReleaseResolution}
+ */
 export function resolveRelease({ baseVersion, commits, currentVersion, mode }) {
 	parseVersion(baseVersion);
 	parseVersion(currentVersion);
@@ -124,6 +169,10 @@ export function resolveRelease({ baseVersion, commits, currentVersion, mode }) {
 	};
 }
 
+/**
+ * @param {string} baseTag
+ * @returns {Commit[]}
+ */
 function readCommits(baseTag) {
 	const log = execFileSync(
 		"git",
@@ -141,6 +190,10 @@ function readCommits(baseTag) {
 		});
 }
 
+/**
+ * @param {string[]} arguments_
+ * @returns {Map<string, string>}
+ */
 function parseArguments(arguments_) {
 	const values = new Map();
 
@@ -167,7 +220,7 @@ function main() {
 	const currentVersion = arguments_.get("current-version");
 	const mode = arguments_.get("mode");
 
-	if (!baseVersion || !baseTag || !currentVersion || !mode) {
+	if (!baseVersion || !baseTag || !currentVersion || !mode || !isReleaseMode(mode)) {
 		throw new Error(
 			"Usage: resolve-release-version.mjs --base-version <version> --base-tag <tag> --current-version <version> --mode <mode>",
 		);

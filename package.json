@@ -25,7 +25,7 @@
 		"test:integration:teardown": "tsx scripts/integration-teardown.ts",
 		"test:integration": "pnpm run test:integration:setup && pnpm run test:integration:run ; pnpm run test:integration:teardown",
 		"check": "biome check --write . && pnpm run typecheck && pnpm run test:unit",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "tsc --noEmit && tsc --project tsconfig.scripts.json --noEmit",
 		"lint": "biome lint --write .",
 		"format": "biome format --write .",
 		"inspect": "pnpm dlx @anthropic-ai/mcp-inspector tsx -- src/index.ts"
