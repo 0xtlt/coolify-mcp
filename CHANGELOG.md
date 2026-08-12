@@ -21,6 +21,7 @@ Aligned with Coolify **v4.3.0** / `main` API (`routes/api.php` + OpenAPI). Requi
   - Create requires `type` (`persistent` | `file`); service create also requires `resource_uuid`
   - Update is `PATCH /{resource}/{uuid}/storages` with `uuid` + `type` in the body (not in the path)
 - `coolify_validate_server` is a **write** tool (API requires write ability)
+- Tooling switched from **Bun** to **pnpm** (Node.js + vitest + tsup + tsx)
 
 ### Added
 

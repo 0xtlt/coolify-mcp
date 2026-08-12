@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { createTestClient, readState, updateState } from "./setup";
 
 const client = createTestClient();

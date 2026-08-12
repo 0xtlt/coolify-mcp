@@ -1,6 +1,6 @@
-import { describe, expect, test } from "bun:test";
 import { execSync } from "node:child_process";
 import { readFileSync, unlinkSync } from "node:fs";
+import { describe, expect, test } from "vitest";
 import { createTestClient, readState, updateState } from "./setup";
 
 const client = createTestClient();

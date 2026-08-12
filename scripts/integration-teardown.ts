@@ -1,17 +1,18 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * Stop Docker containers and remove volumes.
- * Usage: bun scripts/integration-teardown.ts
+ * Usage: pnpm run test:integration:teardown
  */
+import { run } from "./spawn.ts";
 
 async function main() {
 	console.log("Stopping Docker containers...");
-	const compose = Bun.spawn(
-		["docker", "compose", "-f", "docker-compose.test.yml", "down", "-v", "--remove-orphans"],
-		{ stdout: "inherit", stderr: "inherit" },
+	const compose = await run(
+		"docker",
+		["compose", "-f", "docker-compose.test.yml", "down", "-v", "--remove-orphans"],
+		{ inherit: true },
 	);
-	const exitCode = await compose.exited;
-	if (exitCode !== 0) {
+	if (compose.code !== 0) {
 		console.error("docker compose down failed");
 		process.exit(1);
 	}

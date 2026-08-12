@@ -38,8 +38,8 @@ npx coolify-mcp
 
 ```bash
 git clone https://github.com/0xtlt/coolify-mcp
-cd coolify-mcp && bun install
-COOLIFY_API_URL=... COOLIFY_TOKEN=... bun run src/index.ts
+cd coolify-mcp && pnpm install
+COOLIFY_API_URL=... COOLIFY_TOKEN=... pnpm start
 ```
 
 ### Claude Desktop
@@ -50,8 +50,8 @@ Add to `~/.claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "coolify": {
-      "command": "bun",
-      "args": ["run", "/path/to/coolify-mcp/src/index.ts"],
+      "command": "pnpm",
+      "args": ["exec", "tsx", "/path/to/coolify-mcp/src/index.ts"],
       "env": {
         "COOLIFY_API_URL": "http://your-server:8000/api/v1",
         "COOLIFY_TOKEN": "your-token"
@@ -290,11 +290,11 @@ The `coolify_get_logs`, `coolify_get_database_logs`, and `coolify_get_service_lo
 ## Development
 
 ```bash
-bun install              # Install dependencies
-bun run dev              # Watch mode
-bun run inspect          # MCP Inspector
-bun run check            # Lint + typecheck + test
-bun test                 # Run tests only
+pnpm install             # Install dependencies
+pnpm run dev             # Watch mode
+pnpm run inspect         # MCP Inspector
+pnpm run check           # Lint + typecheck + test
+pnpm test                # Run tests only
 ```
 
 ## License
