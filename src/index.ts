@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import packageJson from "../package.json" with { type: "json" };
 import { CoolifyClient } from "./client";
 import { loadConfig } from "./config";
 import { registerPrompts } from "./prompts";
@@ -33,7 +34,7 @@ async function main() {
 	const server = new McpServer(
 		{
 			name: "coolify-mcp",
-			version: "4.0.0",
+			version: packageJson.version,
 		},
 		{
 			instructions: `Coolify MCP server for managing self-hosted PaaS instances (Coolify API v4.3+).
