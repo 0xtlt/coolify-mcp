@@ -37,6 +37,15 @@ export function registerTeamTools(server: McpServer, client: CoolifyClient, _con
 	);
 
 	server.tool(
+		"coolify_get_team",
+		"Get a team by numeric id (GET /teams/{id})",
+		{ team_id: z.number().int().min(0).describe("ID of the team") },
+		async ({ team_id }) => {
+			return wrap(() => client.getTeam(team_id));
+		},
+	);
+
+	server.tool(
 		"coolify_get_team_members",
 		"List members of a specific team by ID (GET /teams/{id}/members)",
 		{ team_id: z.number().int().min(0).describe("ID of the team") },

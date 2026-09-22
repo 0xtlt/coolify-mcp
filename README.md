@@ -1,10 +1,10 @@
 # coolify-mcp
 
-MCP server for managing Coolify instances (**v4.3+ API**). Control applications, databases, services, servers, and more directly from Claude or any MCP-compatible client.
+MCP server for managing Coolify instances (**v4.3.23 API**). Control applications, databases, services, servers, and more directly from Claude or any MCP-compatible client.
 
-**116 tools | 7 resources | 4 prompts**
+**213 tools | 7 resources | 4 prompts**
 
-Requires Coolify **v4.3.0** or newer (`/api/v1`). Legacy GET-based state-changing endpoints are not supported.
+Requires Coolify **v4.3.0** or newer (`/api/v1`). Instance email settings and preview log/update routes need **v4.3.23**. Legacy GET-based state-changing endpoints are not supported.
 
 ## Installation
 
@@ -132,7 +132,7 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_update_private_key` | [WRITE] Update an SSH key |
 | `coolify_delete_private_key` | [DESTRUCTIVE] Delete an SSH key |
 
-### Projects & Environments (9)
+### Projects & Environments (10)
 
 | Tool | Description |
 |------|-------------|
@@ -214,13 +214,14 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_run_service_storage_backup` | [WRITE] Run on-demand service volume backup |
 | `coolify_delete_service_storage_backup` | [DESTRUCTIVE] Delete service volume backup schedule |
 
-### Logs (3)
+### Logs (4)
 
 | Tool | Description |
 |------|-------------|
 | `coolify_get_logs` | Get application logs with filtering |
 | `coolify_get_database_logs` | Get database logs with filtering |
 | `coolify_get_service_logs` | Get service logs with filtering |
+| `coolify_get_preview_logs` | Get preview deployment logs with filtering |
 
 ### System (2)
 
@@ -229,7 +230,7 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_get_version` | Get Coolify instance version |
 | `coolify_healthcheck` | Check if Coolify is healthy |
 
-### Teams (4)
+### Teams (5)
 
 | Tool | Description |
 |------|-------------|
@@ -237,6 +238,41 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_get_current_team` | Get token team (`GET /team`) |
 | `coolify_get_current_team_members` | List token team members (`GET /team/members`) |
 | `coolify_get_team_members` | List members of a team by ID |
+| `coolify_get_team` | Get a team by numeric id (`GET /teams/{id}`) |
+
+### Added in 4.1.0 (Coolify v4.3.23)
+
+| Tool | Description |
+|------|-------------|
+| `coolify_list_tags` / `coolify_create_tag` / `coolify_update_tag` / `coolify_delete_tag` | Team tag CRUD |
+| `coolify_list_resource_tags` / `coolify_add_resource_tags` / `coolify_remove_resource_tag` | Tags on an application, database, or service |
+| `coolify_list_destinations` / `coolify_get_destination` / `coolify_create_destination` / `coolify_update_destination` / `coolify_delete_destination` | Docker network destinations |
+| `coolify_list_server_destinations` | Destinations on a server |
+| `coolify_list_application_destinations` / `coolify_add_application_destination` / `coolify_remove_application_destination` | Extra application destinations |
+| `coolify_move_resource` | Move an application, database, or service to another environment |
+| `coolify_clone_resource` | Clone an application, database, or service onto a destination |
+| `coolify_migrate_resource` | [DESTRUCTIVE] Migrate to another destination. Coolify returns 404 unless the instance is in dev mode |
+| `coolify_list_rollback_images` / `coolify_rollback_application` | List image tags and roll an application back |
+| `coolify_update_preview` / `coolify_delete_preview` / `coolify_get_preview_logs` | Preview deployment domains, deletion, and logs |
+| `coolify_update_environment` | Rename an environment or change its description |
+| `coolify_list_shared_envs` / `coolify_create_shared_env` / `coolify_update_shared_env` / `coolify_delete_shared_env` | Shared envs for team, project, environment, or server |
+| `coolify_get_notification_settings` / `coolify_update_notification_settings` | Team email, Discord, Slack, Telegram, Pushover, or webhook settings |
+| `coolify_get_instance_email_settings` / `coolify_update_instance_email_settings` | Instance SMTP and Resend settings (`/settings/email`, root team; update needs `write:sensitive`) |
+| `coolify_list_s3_storages` / `coolify_get_s3_storage` / `coolify_create_s3_storage` / `coolify_update_s3_storage` / `coolify_delete_s3_storage` / `coolify_validate_s3_storage` | S3-compatible storages |
+| `coolify_list_cloud_tokens` / `coolify_get_cloud_token` / `coolify_create_cloud_token` / `coolify_update_cloud_token` / `coolify_delete_cloud_token` / `coolify_validate_cloud_token` | Hetzner, Vultr, and DigitalOcean tokens |
+| `coolify_list_cloud_init_scripts` / `coolify_get_cloud_init_script` / `coolify_create_cloud_init_script` / `coolify_update_cloud_init_script` / `coolify_delete_cloud_init_script` | Cloud-init scripts |
+| `coolify_list_cloud_provider_options` | Provider catalog (regions, images, plans, SSH keys, firewalls, networks) |
+| `coolify_create_hetzner_server` / `coolify_create_vultr_server` / `coolify_create_digitalocean_server` | [WRITE] Create a cloud server and register it in Coolify |
+| `coolify_get_docker_cleanup` / `coolify_update_docker_cleanup` / `coolify_run_docker_cleanup` / `coolify_list_docker_cleanup_executions` | Server Docker cleanup |
+| `coolify_get_log_drains` / `coolify_update_log_drains` | New Relic, Axiom, and custom log drains |
+| `coolify_get_sentinel` / `coolify_update_sentinel` | Sentinel metrics settings |
+| `coolify_get_cloudflare_tunnel` / `coolify_update_cloudflare_tunnel` / `coolify_enable_cloudflare_tunnel` / `coolify_disable_cloudflare_tunnel` | Cloudflare Tunnel |
+| `coolify_get_server_proxy` / `coolify_update_server_proxy` / `coolify_save_server_proxy_configuration` / `coolify_restart_server_proxy` | Proxy settings, configuration, and restart |
+| `coolify_list_gitlab_apps` / `coolify_create_gitlab_app` / `coolify_update_gitlab_app` / `coolify_delete_gitlab_app` | GitLab App integrations |
+| `coolify_list_service_applications` / `coolify_get_service_application` / `coolify_update_service_application` / `coolify_get_service_application_logs` / `coolify_start_service_application` / `coolify_restart_service_application` / `coolify_stop_service_application` | Compose applications inside a service |
+| `coolify_list_service_databases` / `coolify_get_service_database` / `coolify_update_service_database` / `coolify_get_service_database_logs` / `coolify_start_service_database` / `coolify_restart_service_database` / `coolify_stop_service_database` | Compose databases inside a service |
+| `coolify_execute_application_scheduled_task` / `coolify_execute_service_scheduled_task` | Queue a scheduled task immediately |
+| `coolify_export_server` / `coolify_import_server` / `coolify_transfer_server` / `coolify_claim_server` / `coolify_complete_server_transfer` / `coolify_write_server_transfer_mailbox` | Move a server between Coolify instances. Export, transfer, and mailbox write need `read:sensitive` |
 
 ## Available Resources
 

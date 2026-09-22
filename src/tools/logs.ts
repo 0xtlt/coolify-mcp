@@ -108,4 +108,40 @@ export function registerLogTools(server: McpServer, client: CoolifyClient, _conf
 			});
 		},
 	);
+
+	server.tool(
+		"coolify_get_preview_logs",
+		"Retrieve logs for an application preview deployment (GET /applications/{uuid}/previews/{pull_request_id}/logs)",
+		{
+			uuid: schemas.uuid.describe("UUID of the application"),
+			pull_request_id: z.number().int().positive().describe("Pull request id of the preview"),
+			show_timestamps: z.boolean().optional().describe("Include container timestamps"),
+			...logFilterSchema,
+		},
+		async ({
+			uuid,
+			pull_request_id,
+			show_timestamps,
+			level,
+			since,
+			until,
+			search,
+			limit,
+			tail,
+		}) => {
+			return wrap(async () => {
+				const rawLogs = await client.getPreviewLogs(uuid, pull_request_id, limit, show_timestamps);
+				const logs = unwrapLogPayload(rawLogs);
+				const filter = buildLogFilter({ level, since, until, search, limit, tail });
+				return processLogs(logs, filter, "preview", uuid);
+			});
+		},
+	);
+}
+
+function unwrapLogPayload(raw: unknown): unknown {
+	if (raw && typeof raw === "object" && "logs" in raw) {
+		return (raw as { logs: unknown }).logs;
+	}
+	return raw;
 }

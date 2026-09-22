@@ -680,4 +680,89 @@ describe("CoolifyClient", () => {
 		const result = await client.listApplications();
 		expect(result).toEqual(apps);
 	});
+
+	it("loads preview logs for a pull request", async () => {
+		mockFetch(new Response('{"logs":"line"}', { status: 200 }));
+		await client.getPreviewLogs("app-1", 42, 50, true);
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/previews/42/logs?lines=50&show_timestamps=true",
+		);
+	});
+
+	it("patches instance email settings", async () => {
+		mockFetch(new Response('{"smtp_enabled":true}', { status: 200 }));
+		await client.updateInstanceEmailSettings({ smtp_enabled: true, smtp_host: "smtp.example.com" });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/settings/email");
+		expect(options.method).toBe("PATCH");
+		expect(JSON.parse(options.body as string)).toEqual({
+			smtp_enabled: true,
+			smtp_host: "smtp.example.com",
+		});
+	});
+
+	it("moves a resource with environment_uuid", async () => {
+		mockFetch(new Response('{"message":"Application moved successfully."}', { status: 200 }));
+		await client.moveResource("applications", "app-1", "env-2");
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/move");
+		expect(options.method).toBe("POST");
+		expect(JSON.parse(options.body as string)).toEqual({ environment_uuid: "env-2" });
+	});
+
+	it("lists Hetzner locations with the cloud token query", async () => {
+		mockFetch(new Response("[]", { status: 200 }));
+		await client.listCloudProviderOptions("hetzner", "locations", "token-1");
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/hetzner/locations?cloud_provider_token_uuid=token-1",
+		);
+	});
+
+	it("rejects an unknown cloud catalog kind", async () => {
+		await expect(client.listCloudProviderOptions("vultr", "firewalls", "token-1")).rejects.toThrow(
+			/Unsupported vultr catalog/,
+		);
+	});
+
+	it("creates a team shared env and encodes environment scope", async () => {
+		mockFetch(new Response('{"id":3}', { status: 201 }));
+		await client.createSharedEnv(
+			{
+				scope: "environment",
+				projectUuid: "proj-1",
+				environmentNameOrUuid: "production",
+			},
+			{ key: "APP_URL", value: "https://example.com" },
+		);
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/projects/proj-1/environments/production/envs",
+		);
+		expect(options.method).toBe("POST");
+		expect(JSON.parse(options.body as string)).toEqual({
+			key: "APP_URL",
+			value: "https://example.com",
+		});
+	});
+
+	it("runs docker cleanup with POST", async () => {
+		mockFetch(new Response('{"message":"started"}', { status: 200 }));
+		await client.runDockerCleanup("srv-1", { delete_unused_volumes: true });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/servers/srv-1/docker-cleanup/run");
+		expect(options.method).toBe("POST");
+		expect(JSON.parse(options.body as string)).toEqual({ delete_unused_volumes: true });
+	});
+
+	it("starts a service application with force and latest query flags", async () => {
+		mockFetch(new Response('{"message":"queued"}', { status: 200 }));
+		await client.startServiceApplication("svc-1", "app-9", { force: true, latest: false });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/services/svc-1/applications/app-9/start?force=true&latest=false",
+		);
+		expect(options.method).toBe("POST");
+	});
 });

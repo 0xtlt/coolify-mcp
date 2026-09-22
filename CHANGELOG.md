@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-09-22
+
+Aligned with Coolify **v4.3.23** (`routes/api.php` on tag `v4.3.23` and the matching API controllers). Requires Coolify v4.3+. Endpoints added after v4.3.0 (`/settings/email`, preview log and preview update) need v4.3.23.
+
+### Added
+
+- Tags, destinations, resource move/clone, application rollback, and preview update/delete/logs
+- Shared environment variables for team, project, environment, and server scopes
+- Team notification channels and instance email settings (`GET`/`PATCH /settings/email`)
+- S3 storages, cloud provider tokens, cloud-init scripts, and Hetzner, Vultr, and DigitalOcean server creation
+- Server Docker cleanup, log drains, Sentinel, Cloudflare Tunnel, and proxy configuration
+- GitLab Apps, compose service applications and databases, and immediate scheduled-task execution
+- Environment update (`PATCH /projects/{uuid}/environments/{environment}`) and `GET /teams/{id}`
+- Server transfer export, import, migrate, claim, complete, and mailbox write
+- `coolify_migrate_resource` for `POST /{resource}/{uuid}/migrate`. Coolify v4.3.23 returns 404 for that route unless the instance is in dev mode
+
+API enable/disable and `POST /sentinel/push` are not exposed. Enable/disable turns off the API the MCP is using, and the Sentinel push route is for agents, not user tokens.
+
 ## [4.0.0] - 2026-08-12
 
 Aligned with Coolify **v4.3.0** / `main` API (`routes/api.php` + OpenAPI). Requires Coolify v4.3+.
