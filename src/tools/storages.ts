@@ -37,18 +37,35 @@ export function registerStorageTools(server: McpServer, client: CoolifyClient, c
 					.optional()
 					.describe("Volume name (required for persistent storages)"),
 				mount_path: z.string().min(1).describe("Container mount path (e.g. /data)"),
-				host_path: z.string().optional().describe("Host path (persistent only, optional)"),
+				host_path: z
+					.string()
+					.optional()
+					.describe("Unsupported by current Coolify; use type=file with fs_path instead"),
 				content: z.string().optional().describe("File content (file storages only)"),
 				is_directory: z
 					.boolean()
 					.optional()
 					.describe("Whether this is a directory mount (file only)"),
+				is_host_file: z
+					.boolean()
+					.optional()
+					.describe("Mount an existing host file (type=file, requires fs_path)"),
 				fs_path: z
 					.string()
 					.optional()
-					.describe("Host directory path (required when is_directory is true)"),
+					.describe("Host path (required with is_directory or is_host_file)"),
 			},
-			async ({ uuid, type, name, mount_path, host_path, content, is_directory, fs_path }) => {
+			async ({
+				uuid,
+				type,
+				name,
+				mount_path,
+				host_path,
+				content,
+				is_directory,
+				is_host_file,
+				fs_path,
+			}) => {
 				if (!isToolAllowed("coolify_create_application_storage", config))
 					return readonlyError("coolify_create_application_storage");
 				return wrap(async () => {
@@ -58,6 +75,7 @@ export function registerStorageTools(server: McpServer, client: CoolifyClient, c
 						mount_path,
 						host_path,
 						content,
+						is_host_file,
 						is_directory,
 						fs_path,
 					});
@@ -81,7 +99,11 @@ export function registerStorageTools(server: McpServer, client: CoolifyClient, c
 				type: storageType,
 				name: z.string().optional().describe("Volume name (persistent only)"),
 				mount_path: z.string().optional().describe("Container mount path"),
-				host_path: z.string().nullable().optional().describe("Host path (persistent only)"),
+				host_path: z
+					.string()
+					.nullable()
+					.optional()
+					.describe("Unsupported by current Coolify; mount sources cannot be updated"),
 				content: z.string().nullable().optional().describe("File content (file only)"),
 				is_preview_suffix_enabled: z
 					.boolean()

@@ -1,4 +1,10 @@
 import type { Config } from "./config";
+import type {
+	DatabaseBackupInput,
+	InstanceEmailSettings,
+	PreviewDomainsInput,
+} from "./lib/api-schemas";
+
 import { CoolifyApiError, NetworkError } from "./lib/errors";
 import type {
 	Application,
@@ -25,6 +31,23 @@ import type {
 	VolumeBackupScheduleInput,
 } from "./types/api";
 import { normalizeStorageList } from "./types/api";
+
+type LogLines = number | "all";
+type LogResponse = string | { logs: string };
+
+function logQuery(lines: LogLines, showTimestamps?: boolean): string {
+	const params = new URLSearchParams({ lines: String(lines) });
+	if (showTimestamps !== undefined) params.set("show_timestamps", String(showTimestamps));
+	return params.toString();
+}
+
+function validateStorageInput(data: { host_path?: string | null }): void {
+	if (data.host_path !== undefined) {
+		throw new Error(
+			'Coolify no longer accepts host_path. Create a type="file" storage with fs_path and is_directory=true (directory) or is_host_file=true (existing host file). Existing mount sources cannot be changed by PATCH.',
+		);
+	}
+}
 
 export class CoolifyClient {
 	private baseUrl: string;
@@ -167,8 +190,12 @@ export class CoolifyClient {
 	}
 
 	// Logs
-	async getApplicationLogs(uuid: string, lines = 100): Promise<string> {
-		return this.request<string>("GET", `/applications/${uuid}/logs?lines=${lines}`);
+	async getApplicationLogs(
+		uuid: string,
+		lines: LogLines = 100,
+		showTimestamps?: boolean,
+	): Promise<LogResponse> {
+		return this.request("GET", `/applications/${uuid}/logs?${logQuery(lines, showTimestamps)}`);
 	}
 
 	// Servers
@@ -298,13 +325,20 @@ export class CoolifyClient {
 	}
 
 	// Database Logs
-	async getDatabaseLogs(uuid: string, lines = 100): Promise<string> {
-		return this.request<string>("GET", `/databases/${uuid}/logs?lines=${lines}`);
+	async getDatabaseLogs(
+		uuid: string,
+		lines: LogLines = 100,
+		showTimestamps?: boolean,
+	): Promise<LogResponse> {
+		return this.request("GET", `/databases/${uuid}/logs?${logQuery(lines, showTimestamps)}`);
 	}
 
 	// Database Backups
-	async createDatabaseBackup(uuid: string): Promise<{ message: string }> {
-		return this.request("POST", `/databases/${uuid}/backups`);
+	async createDatabaseBackup(
+		uuid: string,
+		data: DatabaseBackupInput & { frequency: string; backup_now?: boolean },
+	): Promise<Record<string, unknown>> {
+		return this.request("POST", `/databases/${uuid}/backups`, data);
 	}
 
 	async deleteDatabaseBackup(
@@ -450,8 +484,12 @@ export class CoolifyClient {
 	}
 
 	// Service Logs
-	async getServiceLogs(uuid: string, lines = 100): Promise<string> {
-		return this.request<string>("GET", `/services/${uuid}/logs?lines=${lines}`);
+	async getServiceLogs(
+		uuid: string,
+		lines: LogLines = 100,
+		showTimestamps?: boolean,
+	): Promise<LogResponse> {
+		return this.request("GET", `/services/${uuid}/logs?${logQuery(lines, showTimestamps)}`);
 	}
 
 	// Service Environment Variables
@@ -665,9 +703,11 @@ export class CoolifyClient {
 			host_path?: string;
 			content?: string;
 			is_directory?: boolean;
+			is_host_file?: boolean;
 			fs_path?: string;
 		},
 	): Promise<{ uuid?: string } & Record<string, unknown>> {
+		validateStorageInput(data);
 		return this.request("POST", `/applications/${uuid}/storages`, data);
 	}
 
@@ -683,6 +723,7 @@ export class CoolifyClient {
 			is_preview_suffix_enabled?: boolean;
 		},
 	): Promise<Record<string, unknown>> {
+		validateStorageInput(data);
 		return this.request("PATCH", `/applications/${uuid}/storages`, data);
 	}
 
@@ -708,9 +749,11 @@ export class CoolifyClient {
 			host_path?: string;
 			content?: string;
 			is_directory?: boolean;
+			is_host_file?: boolean;
 			fs_path?: string;
 		},
 	): Promise<{ uuid?: string } & Record<string, unknown>> {
+		validateStorageInput(data);
 		return this.request("POST", `/databases/${uuid}/storages`, data);
 	}
 
@@ -726,6 +769,7 @@ export class CoolifyClient {
 			is_preview_suffix_enabled?: boolean;
 		},
 	): Promise<Record<string, unknown>> {
+		validateStorageInput(data);
 		return this.request("PATCH", `/databases/${uuid}/storages`, data);
 	}
 
@@ -752,9 +796,11 @@ export class CoolifyClient {
 			host_path?: string;
 			content?: string;
 			is_directory?: boolean;
+			is_host_file?: boolean;
 			fs_path?: string;
 		},
 	): Promise<{ uuid?: string } & Record<string, unknown>> {
+		validateStorageInput(data);
 		return this.request("POST", `/services/${uuid}/storages`, data);
 	}
 
@@ -770,6 +816,7 @@ export class CoolifyClient {
 			is_preview_suffix_enabled?: boolean;
 		},
 	): Promise<Record<string, unknown>> {
+		validateStorageInput(data);
 		return this.request("PATCH", `/services/${uuid}/storages`, data);
 	}
 
@@ -896,6 +943,44 @@ export class CoolifyClient {
 			`/databases/${dbUuid}/backups/${backupUuid}`,
 			data,
 		);
+	}
+
+	async getApplicationPreviewLogs(
+		uuid: string,
+		pullRequestId: number,
+		lines: LogLines = 100,
+		showTimestamps?: boolean,
+	): Promise<LogResponse> {
+		return this.request(
+			"GET",
+			`/applications/${uuid}/previews/${pullRequestId}/logs?${logQuery(lines, showTimestamps)}`,
+		);
+	}
+
+	async updateApplicationPreview(
+		uuid: string,
+		pullRequestId: number,
+		data: PreviewDomainsInput,
+	): Promise<Record<string, unknown>> {
+		if ((data.domains !== undefined) === (data.docker_compose_domains !== undefined)) {
+			throw new Error("Provide exactly one of domains or docker_compose_domains.");
+		}
+		return this.request("PATCH", `/applications/${uuid}/previews/${pullRequestId}`, data);
+	}
+
+	async deleteApplicationPreview(
+		uuid: string,
+		pullRequestId: number,
+	): Promise<{ message: string }> {
+		return this.request("DELETE", `/applications/${uuid}/previews/${pullRequestId}`);
+	}
+
+	async getInstanceEmailSettings(): Promise<InstanceEmailSettings> {
+		return this.request("GET", "/settings/email");
+	}
+
+	async updateInstanceEmailSettings(data: InstanceEmailSettings): Promise<InstanceEmailSettings> {
+		return this.request("PATCH", "/settings/email", data);
 	}
 
 	// Resources (aggregate)

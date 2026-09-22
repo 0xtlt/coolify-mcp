@@ -86,4 +86,18 @@ describe("16 - Storages", () => {
 			throw error;
 		}
 	});
+	test("creates a host-file storage using is_host_file and fs_path", async () => {
+		const { applicationUuid } = readState();
+		if (!applicationUuid) throw new Error("Application fixture is missing");
+		const storage = await client.createApplicationStorage(applicationUuid, {
+			type: "file",
+			mount_path: "/etc/mcp-test.conf",
+			fs_path: "/data/mcp-test.conf",
+			is_host_file: true,
+		});
+		expect(storage.is_host_file).toBe(true);
+		expect(storage.fs_path).toBe("/data/mcp-test.conf");
+		if (!storage.uuid) throw new Error("Storage response has no UUID");
+		await client.deleteApplicationStorage(applicationUuid, storage.uuid);
+	});
 });

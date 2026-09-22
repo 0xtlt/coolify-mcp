@@ -2,9 +2,11 @@
 
 MCP server for managing Coolify instances (**v4.3+ API**). Control applications, databases, services, servers, and more directly from Claude or any MCP-compatible client.
 
-**116 tools | 7 resources | 4 prompts**
+**121 tools | 7 resources | 4 prompts**
 
-Requires Coolify **v4.3.0** or newer (`/api/v1`). Legacy GET-based state-changing endpoints are not supported.
+Requires Coolify **v4.3.0** or newer (`/api/v1`); **v4.3.23 is recommended** and is the integration-test target for MCP **4.1.0**. New preview and instance-email features were verified on v4.3.23. Legacy GET-based state-changing endpoints are not supported.
+
+See the [4.1.0 API audit](docs/api-audit-4.1.0.md) for pinned upstream sources, compatibility changes, and unreleased endpoints.
 
 ## Installation
 
@@ -14,7 +16,7 @@ Requires Coolify **v4.3.0** or newer (`/api/v1`). Legacy GET-based state-changin
 claude mcp add coolify \
   -e COOLIFY_API_URL=http://your-server:8000/api/v1 \
   -e COOLIFY_TOKEN=your-token \
-  -- npx coolify-mcp
+  -- npx mcp-coolify
 ```
 
 ### Codex
@@ -23,7 +25,7 @@ claude mcp add coolify \
 codex mcp add coolify \
   --env COOLIFY_API_URL=http://your-server:8000/api/v1 \
   --env COOLIFY_TOKEN=your-token \
-  -- npx coolify-mcp
+  -- npx mcp-coolify
 ```
 
 ### Other MCP clients
@@ -31,7 +33,7 @@ codex mcp add coolify \
 ```bash
 COOLIFY_API_URL=http://your-server:8000/api/v1 \
 COOLIFY_TOKEN=your-token \
-npx coolify-mcp
+npx mcp-coolify
 ```
 
 ### From source
@@ -80,6 +82,16 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_restart_application` | [DESTRUCTIVE] Restart an application |
 | `coolify_delete_application` | [DESTRUCTIVE] Delete an application |
 
+### Preview Deployments (3)
+
+Verified on Coolify v4.3.23. Each tool takes the parent application `uuid` and a positive integer `pull_request_id`.
+
+| Tool | Description |
+|------|-------------|
+| `coolify_get_application_preview_logs` | Read preview runtime logs with the same filters as application logs |
+| `coolify_update_application_preview` | [WRITE] Replace preview domains using `domains` or `docker_compose_domains` |
+| `coolify_delete_application_preview` | [DESTRUCTIVE] Remove the preview, its containers, volumes, and networks |
+
 ### Databases (11)
 
 | Tool | Description |
@@ -89,12 +101,20 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_create_database` | [WRITE] Create PostgreSQL, MySQL, MariaDB, MongoDB, Redis, etc. |
 | `coolify_update_database` | [WRITE] Update database config |
 | `coolify_list_database_backups` | List backups for a database |
-| `coolify_create_database_backup` | [WRITE] Create a database backup |
+| `coolify_create_database_backup` | [WRITE] Create a backup schedule (`frequency` required, optional `backup_now`) |
 | `coolify_delete_database_backup` | [DESTRUCTIVE] Delete a scheduled backup config |
 | `coolify_start_database` | [WRITE] Start a stopped database |
 | `coolify_stop_database` | [DESTRUCTIVE] Stop a database |
 | `coolify_restart_database` | [DESTRUCTIVE] Restart a database |
 | `coolify_delete_database` | [DESTRUCTIVE] Delete a database |
+
+### Backup Schedule Updates & Executions (3)
+
+| Tool | Description |
+|------|-------------|
+| `coolify_update_database_backup` | [WRITE] Update schedule, retention, S3 and missing-backup alerts |
+| `coolify_list_backup_executions` | List execution history for a database backup schedule |
+| `coolify_delete_backup_execution` | [DESTRUCTIVE] Delete a backup execution |
 
 ### Services (8)
 
@@ -214,6 +234,32 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_run_service_storage_backup` | [WRITE] Run on-demand service volume backup |
 | `coolify_delete_service_storage_backup` | [DESTRUCTIVE] Delete service volume backup schedule |
 
+### Scheduled Tasks (10)
+
+| Tool | Description |
+|------|-------------|
+| `coolify_list_application_scheduled_tasks` | List application tasks |
+| `coolify_create_application_scheduled_task` | [WRITE] Create an application task |
+| `coolify_update_application_scheduled_task` | [WRITE] Update an application task |
+| `coolify_delete_application_scheduled_task` | [DESTRUCTIVE] Delete an application task |
+| `coolify_list_application_scheduled_task_executions` | List application task executions |
+| `coolify_list_service_scheduled_tasks` | List service tasks |
+| `coolify_create_service_scheduled_task` | [WRITE] Create a service task |
+| `coolify_update_service_scheduled_task` | [WRITE] Update a service task |
+| `coolify_delete_service_scheduled_task` | [DESTRUCTIVE] Delete a service task |
+| `coolify_list_service_scheduled_task_executions` | List service task executions |
+
+### GitHub Apps (6)
+
+| Tool | Description |
+|------|-------------|
+| `coolify_list_github_apps` | List GitHub integrations |
+| `coolify_create_github_app` | [WRITE] Create an integration |
+| `coolify_update_github_app` | [WRITE] Update an integration |
+| `coolify_delete_github_app` | [DESTRUCTIVE] Delete an integration |
+| `coolify_list_github_app_repositories` | List accessible repositories |
+| `coolify_list_github_app_branches` | List repository branches |
+
 ### Logs (3)
 
 | Tool | Description |
@@ -222,12 +268,22 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_get_database_logs` | Get database logs with filtering |
 | `coolify_get_service_logs` | Get service logs with filtering |
 
-### System (2)
+### System (3)
 
 | Tool | Description |
 |------|-------------|
 | `coolify_get_version` | Get Coolify instance version |
 | `coolify_healthcheck` | Check if Coolify is healthy |
+| `coolify_list_resources` | List resources across projects |
+
+### Instance Email Settings (2)
+
+Verified on Coolify v4.3.23. Requires a root-team admin/owner API token. Reading secret values requires `read:sensitive` or `root`; updating requires `write:sensitive`.
+
+| Tool | Description |
+|------|-------------|
+| `coolify_get_instance_email_settings` | Read instance-wide SMTP and Resend settings |
+| `coolify_update_instance_email_settings` | [WRITE] Update SMTP/Resend settings; `null` clears nullable fields |
 
 ### Teams (4)
 
@@ -268,13 +324,21 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 
 ## Log Filtering
 
-The `coolify_get_logs`, `coolify_get_database_logs`, and `coolify_get_service_logs` tools support:
+The `coolify_get_logs`, `coolify_get_application_preview_logs`, `coolify_get_database_logs`, and `coolify_get_service_logs` tools support:
 
 - `level`: Minimum log level (debug, info, warn, error, fatal)
 - `since`/`until`: ISO 8601 timestamps for time range
 - `search`: Case-insensitive text search
-- `limit`: Max entries (default 100)
+- `lines`: Server lines to fetch (defaults to `limit`, up to 10000; `"all"` or `-1` fetches all)
+- `show_timestamps`: Include server timestamps (default true)
+- `limit`: Max filtered entries returned (default 100, max 1000)
 - `tail`: Get most recent logs
+
+## API Compatibility Notes for 4.1.0
+
+- Storage creation/update no longer accepts `host_path`. Calls supplying it receive a migration error before contacting Coolify. Use a named `type: "persistent"` volume, or create `type: "file"` with `fs_path` and either `is_directory: true` or `is_host_file: true`. Existing mount sources cannot be changed through the update endpoint.
+- `coolify_create_database_backup` now requires `frequency` and creates a schedule; set `backup_now: true` to also execute it immediately. The result includes the schedule UUID. Create/update support retention, S3 (`s3_storage_uuid`), timeout, and `missing_backup_notification_days` (0 disables alerts). The unsupported update fields `s3_storage_id` and `database_name_prefix` have been removed.
+- Preview-domain updates replace the entire domain configuration. Supply exactly one of `domains` (regular app; `null` clears it) or `docker_compose_domains` (Compose app; `[]` clears it).
 
 ## Environment Variables
 

@@ -314,7 +314,7 @@ describe("CoolifyClient", () => {
 	// Phase 5: Backup management
 	it("uses POST for createDatabaseBackup", async () => {
 		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
-		await client.createDatabaseBackup("db-1");
+		await client.createDatabaseBackup("db-1", { frequency: "0 2 * * *", backup_now: true });
 		const [url, options] = fetchCalls[0];
 		expect(url).toBe("https://coolify.example.com/api/v1/databases/db-1/backups");
 		expect(options.method).toBe("POST");

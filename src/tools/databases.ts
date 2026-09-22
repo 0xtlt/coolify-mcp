@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { CoolifyClient } from "../client";
 import type { Config } from "../config";
+import { databaseBackupFields } from "../lib/api-schemas";
 import { checkConfirmation, isToolAllowed, readonlyError } from "../lib/safety";
 import * as schemas from "../lib/schemas";
 import { type ResponseAction, wrap, wrapWithActions } from "../lib/wrap";
@@ -12,7 +13,11 @@ function getDatabaseActions(uuid: string, status?: string): ResponseAction[] {
 	const actions: ResponseAction[] = [
 		{ tool: "coolify_get_database_logs", args: { uuid }, hint: "View logs" },
 		{ tool: "coolify_list_database_backups", args: { uuid }, hint: "View backups" },
-		{ tool: "coolify_create_database_backup", args: { uuid }, hint: "Create backup" },
+		{
+			tool: "coolify_create_database_backup",
+			args: { uuid },
+			hint: "Create a backup schedule (frequency required)",
+		},
 		{ tool: "coolify_update_database", args: { uuid }, hint: "Update config" },
 	];
 	if (status === "running" || status?.startsWith("running:")) {
@@ -213,15 +218,20 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 	if (isToolAllowed("coolify_create_database_backup", config)) {
 		server.tool(
 			"coolify_create_database_backup",
-			"[WRITE] Create a backup of a Coolify database",
-			{ uuid: schemas.uuid.describe("UUID of the database") },
-			async ({ uuid }) => {
+			"[WRITE] Create a database backup schedule (frequency required). Set backup_now=true to also run it immediately.",
+			{
+				uuid: schemas.uuid.describe("UUID of the database"),
+				...databaseBackupFields,
+				frequency: z.string().min(1).describe("Cron expression, e.g. 0 2 * * *"),
+				backup_now: z
+					.boolean()
+					.optional()
+					.describe("Run the backup immediately as well as scheduling it"),
+			},
+			async ({ uuid, ...fields }) => {
 				if (!isToolAllowed("coolify_create_database_backup", config))
 					return readonlyError("coolify_create_database_backup");
-				return wrap(async () => {
-					const result = await client.createDatabaseBackup(uuid);
-					return result.message || `Backup created for database ${uuid}`;
-				});
+				return wrap(() => client.createDatabaseBackup(uuid, fields));
 			},
 		);
 	}
@@ -303,10 +313,7 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 			{
 				uuid: schemas.uuid.describe("UUID of the database"),
 				backup_uuid: schemas.uuid.describe("UUID of the scheduled backup"),
-				enabled: z.boolean().optional().describe("Enable or disable the backup schedule"),
-				frequency: z.string().optional().describe("Cron frequency for backups"),
-				s3_storage_id: z.number().int().optional().describe("S3 storage ID for remote backups"),
-				database_name_prefix: z.string().optional().describe("Prefix for backup database name"),
+				...databaseBackupFields,
 				custom_fields: schemas.customFields,
 			},
 			async ({ uuid, backup_uuid, custom_fields, ...fields }) => {

@@ -9,6 +9,14 @@ export interface ToolMeta {
 }
 
 const TOOL_METADATA: Record<string, ToolMeta> = {
+	coolify_get_application_preview_logs: { level: "read" },
+	coolify_update_application_preview: { level: "write" },
+	coolify_delete_application_preview: {
+		level: "destructive",
+		dangerWarning: "Deletes the preview deployment and its containers, volumes, and networks.",
+	},
+	coolify_get_instance_email_settings: { level: "read" },
+	coolify_update_instance_email_settings: { level: "write" },
 	// Applications - read
 	coolify_list_applications: { level: "read" },
 	coolify_get_application: { level: "read" },
