@@ -110,6 +110,23 @@ export function registerServiceScheduledTaskTools(
 		);
 	}
 
+	if (isToolAllowed("coolify_execute_service_scheduled_task", config)) {
+		server.tool(
+			"coolify_execute_service_scheduled_task",
+			"[WRITE] Queue immediate execution of a service scheduled task",
+			{
+				uuid: schemas.uuid.describe("UUID of the service"),
+				task_uuid: schemas.uuid.describe("UUID of the scheduled task"),
+			},
+			async ({ uuid, task_uuid }) => {
+				if (!isToolAllowed("coolify_execute_service_scheduled_task", config)) {
+					return readonlyError("coolify_execute_service_scheduled_task");
+				}
+				return wrap(() => client.executeServiceScheduledTask(uuid, task_uuid));
+			},
+		);
+	}
+
 	server.tool(
 		"coolify_list_service_scheduled_task_executions",
 		"List executions of a scheduled task for a Coolify service",

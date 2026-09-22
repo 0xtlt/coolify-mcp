@@ -11,19 +11,29 @@ import { registerDatabaseEnvTools } from "./tools/database-envs";
 import { registerDatabaseStorageTools } from "./tools/database-storages";
 import { registerDatabaseTools } from "./tools/databases";
 import { registerDeploymentTools } from "./tools/deployments";
+import { registerDestinationTools } from "./tools/destinations";
 import { registerEnvTools } from "./tools/envs";
 import { registerGitHubAppTools } from "./tools/github-apps";
+import { registerGitLabAppTools } from "./tools/gitlab-apps";
 import { registerLogTools } from "./tools/logs";
+import { registerNotificationTools } from "./tools/notifications";
 import { registerPrivateKeyTools } from "./tools/private-keys";
 import { registerProjectTools } from "./tools/projects";
+import { registerResourcePlacementTools } from "./tools/resource-placement";
+import { registerS3AndCloudTools } from "./tools/s3-and-cloud";
 import { registerScheduledTaskTools } from "./tools/scheduled-tasks";
+import { registerServerSettingsTools } from "./tools/server-settings";
+import { registerServerTransferTools } from "./tools/server-transfer";
 import { registerServerTools } from "./tools/servers";
+import { registerServiceComponentTools } from "./tools/service-components";
 import { registerServiceEnvTools } from "./tools/service-envs";
 import { registerServiceScheduledTaskTools } from "./tools/service-scheduled-tasks";
 import { registerServiceStorageTools } from "./tools/service-storages";
 import { registerServiceTools } from "./tools/services";
+import { registerSharedEnvTools } from "./tools/shared-envs";
 import { registerStorageTools } from "./tools/storages";
 import { registerSystemTools } from "./tools/system";
+import { registerTagTools } from "./tools/tags";
 import { registerTeamTools } from "./tools/teams";
 import { registerVolumeBackupTools } from "./tools/volume-backups";
 
@@ -37,7 +47,7 @@ async function main() {
 			version: packageJson.version,
 		},
 		{
-			instructions: `Coolify MCP server for managing self-hosted PaaS instances (Coolify API v4.3+).
+			instructions: `Coolify MCP server for managing self-hosted PaaS instances (Coolify API v4.3.23).
 
 ## Safety Modes
 - **COOLIFY_READONLY=true**: Only read operations are available (list, get, logs)
@@ -79,7 +89,13 @@ async function main() {
 27. **GitHub Apps**: list_github_apps → list_github_app_repositories → list_github_app_branches
 28. **Backup executions**: list_database_backups → list_backup_executions → delete_backup_execution
 29. **Backup schedule**: update_database_backup (modify frequency, enable/disable)
-30. **All resources**: list_resources (aggregate view across all projects)`,
+30. **All resources**: list_resources (aggregate view across all projects)
+31. **Tags & destinations**: list_tags / list_destinations → move_resource / clone_resource
+32. **Previews**: get_preview_logs → update_preview / delete_preview; rollback_application
+33. **Shared envs & notifications**: list_shared_envs / get_notification_settings / get_instance_email_settings
+34. **Server subsystems**: get_server_proxy, docker cleanup, sentinel, log drains, cloudflare tunnel
+35. **Compose service parts**: list_service_applications / list_service_databases
+36. **Cloud servers**: list_cloud_provider_options → create_hetzner_server / create_vultr_server / create_digitalocean_server`,
 		},
 	);
 
@@ -104,6 +120,16 @@ async function main() {
 	registerVolumeBackupTools(server, client, config);
 	registerSystemTools(server, client, config);
 	registerTeamTools(server, client, config);
+	registerTagTools(server, client, config);
+	registerDestinationTools(server, client, config);
+	registerResourcePlacementTools(server, client, config);
+	registerSharedEnvTools(server, client, config);
+	registerNotificationTools(server, client, config);
+	registerS3AndCloudTools(server, client, config);
+	registerServerSettingsTools(server, client, config);
+	registerGitLabAppTools(server, client, config);
+	registerServiceComponentTools(server, client, config);
+	registerServerTransferTools(server, client, config);
 
 	// Register resources
 	registerResources(server, client);

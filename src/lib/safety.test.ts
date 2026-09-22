@@ -184,6 +184,17 @@ describe("isToolAllowed", () => {
 	it("allows unknown tools by default", () => {
 		expect(isToolAllowed("unknown_tool", baseConfig)).toBe(true);
 	});
+
+	it("blocks 4.1.0 write and destructive tools in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		expect(isToolAllowed("coolify_get_instance_email_settings", config)).toBe(true);
+		expect(isToolAllowed("coolify_list_destinations", config)).toBe(true);
+		expect(isToolAllowed("coolify_get_preview_logs", config)).toBe(true);
+		expect(isToolAllowed("coolify_update_instance_email_settings", config)).toBe(false);
+		expect(isToolAllowed("coolify_delete_preview", config)).toBe(false);
+		expect(isToolAllowed("coolify_transfer_server", config)).toBe(false);
+		expect(isToolAllowed("coolify_run_docker_cleanup", config)).toBe(false);
+	});
 });
 
 describe("checkConfirmation", () => {
@@ -295,6 +306,19 @@ describe("checkConfirmation", () => {
 		expect(
 			checkConfirmation("coolify_update_database_backup", { uuid: "db-1" }, config).proceed,
 		).toBe(true);
+	});
+
+	it("requires confirmation for delete_preview and transfer_server", () => {
+		const config = { ...baseConfig, requireConfirm: true };
+		expect(checkConfirmation("coolify_delete_preview", { uuid: "app-1" }, config).proceed).toBe(
+			false,
+		);
+		expect(checkConfirmation("coolify_transfer_server", { uuid: "srv-1" }, config).proceed).toBe(
+			false,
+		);
+		expect(checkConfirmation("coolify_move_resource", { uuid: "app-1" }, config).proceed).toBe(
+			true,
+		);
 	});
 
 	it("proceeds for destructive tools with confirm: true", () => {

@@ -113,6 +113,33 @@ export function registerProjectTools(server: McpServer, client: CoolifyClient, c
 		);
 	}
 
+	if (isToolAllowed("coolify_update_environment", config)) {
+		server.tool(
+			"coolify_update_environment",
+			"[WRITE] Rename an environment or update its description (PATCH /projects/{uuid}/environments/{environment})",
+			{
+				project_uuid: schemas.uuid.describe("UUID of the project"),
+				environment_name_or_uuid: z.string().min(1).describe("Current environment name or UUID"),
+				name: z.string().min(1).optional().describe("New environment name"),
+				description: z.string().optional().describe("Environment description"),
+			},
+			async ({ project_uuid, environment_name_or_uuid, name, description }) => {
+				if (!isToolAllowed("coolify_update_environment", config)) {
+					return readonlyError("coolify_update_environment");
+				}
+				return wrap(async () => {
+					const data: { name?: string; description?: string } = {};
+					if (name !== undefined) data.name = name;
+					if (description !== undefined) data.description = description;
+					if (Object.keys(data).length === 0) {
+						throw new Error("Provide name or description.");
+					}
+					return client.updateEnvironment(project_uuid, environment_name_or_uuid, data);
+				});
+			},
+		);
+	}
+
 	// Write: create environment
 	if (isToolAllowed("coolify_create_environment", config)) {
 		server.tool(

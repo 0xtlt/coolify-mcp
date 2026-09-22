@@ -88,6 +88,27 @@ export class CoolifyClient {
 		}
 	}
 
+	private seg(value: string): string {
+		return encodeURIComponent(value);
+	}
+
+	private withQuery(
+		path: string,
+		params: Record<string, string | number | boolean | undefined>,
+	): string {
+		const search = new URLSearchParams();
+		for (const [key, value] of Object.entries(params)) {
+			if (value !== undefined) search.set(key, String(value));
+		}
+		const qs = search.toString();
+		return qs ? `${path}?${qs}` : path;
+	}
+
+	private defined(data: Record<string, unknown>): Record<string, unknown> | undefined {
+		const entries = Object.entries(data).filter(([, value]) => value !== undefined);
+		return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+	}
+
 	// Applications
 	async listApplications(): Promise<Application[]> {
 		return this.request<Application[]>("GET", "/applications");
@@ -902,4 +923,676 @@ export class CoolifyClient {
 	async listResources(): Promise<unknown[]> {
 		return this.request<unknown[]>("GET", "/resources");
 	}
+
+	async getTeam(id: number): Promise<Team> {
+		return this.request<Team>("GET", `/teams/${id}`);
+	}
+
+	// Instance email settings (Coolify v4.3.23)
+	async getInstanceEmailSettings(): Promise<Record<string, unknown>> {
+		return this.request("GET", "/settings/email");
+	}
+
+	async updateInstanceEmailSettings(
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", "/settings/email", data);
+	}
+
+	// Preview deployments
+	async getPreviewLogs(
+		uuid: string,
+		pullRequestId: number,
+		lines = 100,
+		showTimestamps?: boolean,
+	): Promise<unknown> {
+		return this.request(
+			"GET",
+			this.withQuery(`/applications/${this.seg(uuid)}/previews/${pullRequestId}/logs`, {
+				lines,
+				show_timestamps: showTimestamps,
+			}),
+		);
+	}
+
+	async updatePreview(
+		uuid: string,
+		pullRequestId: number,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/applications/${this.seg(uuid)}/previews/${pullRequestId}`, data);
+	}
+
+	async deletePreview(uuid: string, pullRequestId: number): Promise<{ message: string }> {
+		return this.request("DELETE", `/applications/${this.seg(uuid)}/previews/${pullRequestId}`);
+	}
+
+	// Tags
+	async listTags(): Promise<unknown[]> {
+		return this.request("GET", "/tags");
+	}
+
+	async createTag(name: string): Promise<unknown> {
+		return this.request("POST", "/tags", { name });
+	}
+
+	async updateTag(uuid: string, name: string): Promise<unknown> {
+		return this.request("PATCH", `/tags/${this.seg(uuid)}`, { name });
+	}
+
+	async deleteTag(uuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/tags/${this.seg(uuid)}`);
+	}
+
+	async listResourceTags(kind: CoolifyResourceKind, uuid: string): Promise<unknown[]> {
+		return this.request("GET", `/${kind}/${this.seg(uuid)}/tags`);
+	}
+
+	async addResourceTags(
+		kind: CoolifyResourceKind,
+		uuid: string,
+		data: { tag_name?: string; tag_names?: string[] },
+	): Promise<unknown> {
+		return this.request("POST", `/${kind}/${this.seg(uuid)}/tags`, this.defined(data));
+	}
+
+	async removeResourceTag(
+		kind: CoolifyResourceKind,
+		uuid: string,
+		tagUuid: string,
+	): Promise<{ message: string }> {
+		return this.request("DELETE", `/${kind}/${this.seg(uuid)}/tags/${this.seg(tagUuid)}`);
+	}
+
+	// Destinations
+	async listDestinations(): Promise<unknown[]> {
+		return this.request("GET", "/destinations");
+	}
+
+	async getDestination(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/destinations/${this.seg(uuid)}`);
+	}
+
+	async updateDestination(uuid: string, name: string): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/destinations/${this.seg(uuid)}`, { name });
+	}
+
+	async deleteDestination(uuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/destinations/${this.seg(uuid)}`);
+	}
+
+	async listServerDestinations(serverUuid: string): Promise<unknown[]> {
+		return this.request("GET", `/servers/${this.seg(serverUuid)}/destinations`);
+	}
+
+	async createDestination(
+		serverUuid: string,
+		data: { network: string; name?: string; type?: "standalone" | "swarm" },
+	): Promise<Record<string, unknown>> {
+		return this.request(
+			"POST",
+			`/servers/${this.seg(serverUuid)}/destinations`,
+			this.defined(data),
+		);
+	}
+
+	async listApplicationDestinations(uuid: string): Promise<unknown[]> {
+		return this.request("GET", `/applications/${this.seg(uuid)}/destinations`);
+	}
+
+	async addApplicationDestination(
+		uuid: string,
+		destinationUuid: string,
+	): Promise<{ message: string }> {
+		return this.request("POST", `/applications/${this.seg(uuid)}/destinations`, {
+			destination_uuid: destinationUuid,
+		});
+	}
+
+	async removeApplicationDestination(
+		uuid: string,
+		destinationUuid: string,
+	): Promise<{ message: string }> {
+		return this.request(
+			"DELETE",
+			`/applications/${this.seg(uuid)}/destinations/${this.seg(destinationUuid)}`,
+		);
+	}
+
+	// Move between environments, clone, and dev-only server migration
+	async moveResource(
+		kind: CoolifyResourceKind,
+		uuid: string,
+		environmentUuid: string,
+	): Promise<Record<string, unknown>> {
+		return this.request("POST", `/${kind}/${this.seg(uuid)}/move`, {
+			environment_uuid: environmentUuid,
+		});
+	}
+
+	async cloneResource(
+		kind: CoolifyResourceKind,
+		uuid: string,
+		data: { destination_uuid: string; name?: string; clone_volumes?: boolean },
+	): Promise<Record<string, unknown>> {
+		return this.request("POST", `/${kind}/${this.seg(uuid)}/clone`, this.defined(data));
+	}
+
+	async migrateResource(
+		kind: CoolifyResourceKind,
+		uuid: string,
+		data: { destination_uuid: string; migrate_volumes?: boolean },
+	): Promise<Record<string, unknown>> {
+		return this.request("POST", `/${kind}/${this.seg(uuid)}/migrate`, this.defined(data));
+	}
+
+	async listRollbackImages(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/applications/${this.seg(uuid)}/rollback-images`);
+	}
+
+	async rollbackApplication(uuid: string, commit: string): Promise<Record<string, unknown>> {
+		return this.request("POST", `/applications/${this.seg(uuid)}/rollback`, { commit });
+	}
+
+	async updateEnvironment(
+		projectUuid: string,
+		environmentNameOrUuid: string,
+		data: { name?: string; description?: string },
+	): Promise<Record<string, unknown>> {
+		return this.request(
+			"PATCH",
+			`/projects/${this.seg(projectUuid)}/environments/${this.seg(environmentNameOrUuid)}`,
+			this.defined(data),
+		);
+	}
+
+	// Shared environment variables
+	async listSharedEnvs(scope: SharedEnvScope): Promise<unknown[]> {
+		return this.request("GET", this.sharedEnvBase(scope));
+	}
+
+	async createSharedEnv(
+		scope: SharedEnvScope,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("POST", this.sharedEnvBase(scope), data);
+	}
+
+	async updateSharedEnv(
+		scope: SharedEnvScope,
+		envId: number,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `${this.sharedEnvBase(scope)}/${envId}`, data);
+	}
+
+	async deleteSharedEnv(scope: SharedEnvScope, envId: number): Promise<{ message: string }> {
+		return this.request("DELETE", `${this.sharedEnvBase(scope)}/${envId}`);
+	}
+
+	private sharedEnvBase(scope: SharedEnvScope): string {
+		switch (scope.scope) {
+			case "team":
+				return "/team/envs";
+			case "project":
+				return `/projects/${this.seg(scope.projectUuid)}/envs`;
+			case "environment":
+				return `/projects/${this.seg(scope.projectUuid)}/environments/${this.seg(scope.environmentNameOrUuid)}/envs`;
+			case "server":
+				return `/servers/${this.seg(scope.serverUuid)}/envs`;
+		}
+	}
+
+	// Team notification channels
+	async getNotificationSettings(channel: NotificationChannel): Promise<Record<string, unknown>> {
+		return this.request("GET", `/notifications/${channel}`);
+	}
+
+	async updateNotificationSettings(
+		channel: NotificationChannel,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/notifications/${channel}`, data);
+	}
+
+	// S3 storages
+	async listS3Storages(): Promise<unknown[]> {
+		return this.request("GET", "/s3-storages");
+	}
+
+	async getS3Storage(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/s3-storages/${this.seg(uuid)}`);
+	}
+
+	async createS3Storage(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+		return this.request("POST", "/s3-storages", data);
+	}
+
+	async updateS3Storage(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/s3-storages/${this.seg(uuid)}`, data);
+	}
+
+	async deleteS3Storage(uuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/s3-storages/${this.seg(uuid)}`);
+	}
+
+	async validateS3Storage(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("POST", `/s3-storages/${this.seg(uuid)}/validate`);
+	}
+
+	// Cloud provider tokens
+	async listCloudTokens(): Promise<unknown[]> {
+		return this.request("GET", "/cloud-tokens");
+	}
+
+	async getCloudToken(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/cloud-tokens/${this.seg(uuid)}`);
+	}
+
+	async createCloudToken(data: {
+		provider: "hetzner" | "digitalocean" | "vultr";
+		token: string;
+		name: string;
+	}): Promise<Record<string, unknown>> {
+		return this.request("POST", "/cloud-tokens", data);
+	}
+
+	async updateCloudToken(uuid: string, name: string): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/cloud-tokens/${this.seg(uuid)}`, { name });
+	}
+
+	async deleteCloudToken(uuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/cloud-tokens/${this.seg(uuid)}`);
+	}
+
+	async validateCloudToken(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("POST", `/cloud-tokens/${this.seg(uuid)}/validate`);
+	}
+
+	// Cloud-init scripts
+	async listCloudInitScripts(): Promise<unknown[]> {
+		return this.request("GET", "/cloud-init-scripts");
+	}
+
+	async getCloudInitScript(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/cloud-init-scripts/${this.seg(uuid)}`);
+	}
+
+	async createCloudInitScript(data: {
+		name: string;
+		script: string;
+	}): Promise<Record<string, unknown>> {
+		return this.request("POST", "/cloud-init-scripts", data);
+	}
+
+	async updateCloudInitScript(
+		uuid: string,
+		data: { name?: string; script?: string },
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/cloud-init-scripts/${this.seg(uuid)}`, this.defined(data));
+	}
+
+	async deleteCloudInitScript(uuid: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/cloud-init-scripts/${this.seg(uuid)}`);
+	}
+
+	// Server subsystems
+	async getDockerCleanup(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/servers/${this.seg(uuid)}/docker-cleanup`);
+	}
+
+	async updateDockerCleanup(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/servers/${this.seg(uuid)}/docker-cleanup`, data);
+	}
+
+	async runDockerCleanup(
+		uuid: string,
+		data?: { delete_unused_volumes?: boolean; delete_unused_networks?: boolean },
+	): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			`/servers/${this.seg(uuid)}/docker-cleanup/run`,
+			data ? this.defined(data) : undefined,
+		);
+	}
+
+	async listDockerCleanupExecutions(uuid: string): Promise<unknown[]> {
+		return this.request("GET", `/servers/${this.seg(uuid)}/docker-cleanup/executions`);
+	}
+
+	async getLogDrains(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/servers/${this.seg(uuid)}/log-drains`);
+	}
+
+	async updateLogDrains(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/servers/${this.seg(uuid)}/log-drains`, data);
+	}
+
+	async getSentinel(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/servers/${this.seg(uuid)}/sentinel`);
+	}
+
+	async updateSentinel(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/servers/${this.seg(uuid)}/sentinel`, data);
+	}
+
+	async getCloudflareTunnel(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/servers/${this.seg(uuid)}/cloudflare-tunnel`);
+	}
+
+	async updateCloudflareTunnel(uuid: string, enabled: boolean): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/servers/${this.seg(uuid)}/cloudflare-tunnel`, {
+			is_cloudflare_tunnel: enabled,
+		});
+	}
+
+	async enableCloudflareTunnel(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("POST", `/servers/${this.seg(uuid)}/cloudflare-tunnel/enable`);
+	}
+
+	async disableCloudflareTunnel(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("POST", `/servers/${this.seg(uuid)}/cloudflare-tunnel/disable`);
+	}
+
+	async getServerProxy(uuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/servers/${this.seg(uuid)}/proxy`);
+	}
+
+	async updateServerProxy(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/servers/${this.seg(uuid)}/proxy`, data);
+	}
+
+	async saveServerProxyConfiguration(
+		uuid: string,
+		configuration: string,
+	): Promise<Record<string, unknown>> {
+		return this.request("PUT", `/servers/${this.seg(uuid)}/proxy/configuration`, { configuration });
+	}
+
+	async restartServerProxy(uuid: string): Promise<{ message: string }> {
+		return this.request("POST", `/servers/${this.seg(uuid)}/proxy/restart`);
+	}
+
+	// GitLab Apps
+	async listGitLabApps(): Promise<unknown[]> {
+		return this.request("GET", "/gitlab-apps");
+	}
+
+	async createGitLabApp(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+		return this.request("POST", "/gitlab-apps", data);
+	}
+
+	async updateGitLabApp(
+		id: number,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/gitlab-apps/${id}`, data);
+	}
+
+	async deleteGitLabApp(id: number): Promise<{ message: string }> {
+		return this.request("DELETE", `/gitlab-apps/${id}`);
+	}
+
+	// Service compose applications and databases
+	async listServiceApplications(uuid: string): Promise<unknown[]> {
+		return this.request("GET", `/services/${this.seg(uuid)}/applications`);
+	}
+
+	async getServiceApplication(uuid: string, appUuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/services/${this.seg(uuid)}/applications/${this.seg(appUuid)}`);
+	}
+
+	async updateServiceApplication(
+		uuid: string,
+		appUuid: string,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request(
+			"PATCH",
+			`/services/${this.seg(uuid)}/applications/${this.seg(appUuid)}`,
+			data,
+		);
+	}
+
+	async getServiceApplicationLogs(uuid: string, appUuid: string, lines = 100): Promise<unknown> {
+		return this.request(
+			"GET",
+			this.withQuery(`/services/${this.seg(uuid)}/applications/${this.seg(appUuid)}/logs`, {
+				lines,
+			}),
+		);
+	}
+
+	async startServiceApplication(
+		uuid: string,
+		appUuid: string,
+		opts?: { force?: boolean; latest?: boolean },
+	): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			this.withQuery(`/services/${this.seg(uuid)}/applications/${this.seg(appUuid)}/start`, {
+				force: opts?.force,
+				latest: opts?.latest,
+			}),
+		);
+	}
+
+	async restartServiceApplication(uuid: string, appUuid: string): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			`/services/${this.seg(uuid)}/applications/${this.seg(appUuid)}/restart`,
+		);
+	}
+
+	async stopServiceApplication(uuid: string, appUuid: string): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			`/services/${this.seg(uuid)}/applications/${this.seg(appUuid)}/stop`,
+		);
+	}
+
+	async listServiceDatabases(uuid: string): Promise<unknown[]> {
+		return this.request("GET", `/services/${this.seg(uuid)}/databases`);
+	}
+
+	async getServiceDatabase(uuid: string, databaseUuid: string): Promise<Record<string, unknown>> {
+		return this.request("GET", `/services/${this.seg(uuid)}/databases/${this.seg(databaseUuid)}`);
+	}
+
+	async updateServiceDatabase(
+		uuid: string,
+		databaseUuid: string,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request(
+			"PATCH",
+			`/services/${this.seg(uuid)}/databases/${this.seg(databaseUuid)}`,
+			data,
+		);
+	}
+
+	async getServiceDatabaseLogs(uuid: string, databaseUuid: string, lines = 100): Promise<unknown> {
+		return this.request(
+			"GET",
+			this.withQuery(`/services/${this.seg(uuid)}/databases/${this.seg(databaseUuid)}/logs`, {
+				lines,
+			}),
+		);
+	}
+
+	async startServiceDatabase(
+		uuid: string,
+		databaseUuid: string,
+		opts?: { force?: boolean; latest?: boolean },
+	): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			this.withQuery(`/services/${this.seg(uuid)}/databases/${this.seg(databaseUuid)}/start`, {
+				force: opts?.force,
+				latest: opts?.latest,
+			}),
+		);
+	}
+
+	async restartServiceDatabase(uuid: string, databaseUuid: string): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			`/services/${this.seg(uuid)}/databases/${this.seg(databaseUuid)}/restart`,
+		);
+	}
+
+	async stopServiceDatabase(uuid: string, databaseUuid: string): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			`/services/${this.seg(uuid)}/databases/${this.seg(databaseUuid)}/stop`,
+		);
+	}
+
+	async executeApplicationScheduledTask(
+		uuid: string,
+		taskUuid: string,
+	): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			`/applications/${this.seg(uuid)}/scheduled-tasks/${this.seg(taskUuid)}/execute`,
+		);
+	}
+
+	async executeServiceScheduledTask(uuid: string, taskUuid: string): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			`/services/${this.seg(uuid)}/scheduled-tasks/${this.seg(taskUuid)}/execute`,
+		);
+	}
+
+	// Cloud provider catalogs and server creation
+	async listCloudProviderOptions(
+		provider: CloudProvider,
+		kind: string,
+		cloudProviderTokenUuid: string,
+	): Promise<unknown> {
+		const paths: Record<CloudProvider, Record<string, string>> = {
+			hetzner: {
+				locations: "/hetzner/locations",
+				"server-types": "/hetzner/server-types",
+				images: "/hetzner/images",
+				"ssh-keys": "/hetzner/ssh-keys",
+				firewalls: "/hetzner/firewalls",
+				networks: "/hetzner/networks",
+			},
+			vultr: {
+				regions: "/vultr/regions",
+				plans: "/vultr/plans",
+				os: "/vultr/os",
+				"ssh-keys": "/vultr/ssh-keys",
+			},
+			digitalocean: {
+				regions: "/digitalocean/regions",
+				sizes: "/digitalocean/sizes",
+				images: "/digitalocean/images",
+				"ssh-keys": "/digitalocean/ssh-keys",
+			},
+		};
+		const path = paths[provider][kind];
+		if (!path) {
+			throw new Error(
+				`Unsupported ${provider} catalog '${kind}'. Valid kinds: ${Object.keys(paths[provider]).join(", ")}.`,
+			);
+		}
+		return this.request(
+			"GET",
+			this.withQuery(path, { cloud_provider_token_uuid: cloudProviderTokenUuid }),
+		);
+	}
+
+	async createHetznerServer(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+		return this.request("POST", "/servers/hetzner", data);
+	}
+
+	async createVultrServer(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+		return this.request("POST", "/servers/vultr", data);
+	}
+
+	async createDigitalOceanServer(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+		return this.request("POST", "/servers/digitalocean", data);
+	}
+
+	// Server transfer between Coolify instances
+	async exportServer(
+		uuid: string,
+		opts?: { encrypt?: boolean; passphrase?: string },
+	): Promise<Record<string, unknown>> {
+		return this.request(
+			"GET",
+			this.withQuery(`/servers/${this.seg(uuid)}/export`, {
+				encrypt: opts?.encrypt,
+				passphrase: opts?.passphrase,
+			}),
+		);
+	}
+
+	async importServer(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+		return this.request("POST", "/servers/import", data);
+	}
+
+	async transferServer(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("POST", `/servers/${this.seg(uuid)}/migrate`, data);
+	}
+
+	async claimServer(
+		uuid: string,
+		data?: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("POST", `/servers/${this.seg(uuid)}/claim`, data);
+	}
+
+	async completeServerTransfer(
+		uuid: string,
+		data?: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("POST", `/servers/${this.seg(uuid)}/transfer/complete`, data);
+	}
+
+	async writeServerTransferMailbox(
+		uuid: string,
+		data: Record<string, unknown>,
+	): Promise<Record<string, unknown>> {
+		return this.request("POST", `/servers/${this.seg(uuid)}/export/mailbox`, data);
+	}
 }
+
+export type CoolifyResourceKind = "applications" | "databases" | "services";
+
+export type NotificationChannel =
+	| "email"
+	| "discord"
+	| "slack"
+	| "telegram"
+	| "pushover"
+	| "webhook";
+
+export type CloudProvider = "hetzner" | "digitalocean" | "vultr";
+
+export type SharedEnvScope =
+	| { scope: "team" }
+	| { scope: "project"; projectUuid: string }
+	| { scope: "environment"; projectUuid: string; environmentNameOrUuid: string }
+	| { scope: "server"; serverUuid: string };
