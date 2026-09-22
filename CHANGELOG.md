@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-09-22
+
+Audited against Coolify **v4.3.23** (`e2e2d4010bcd590084b66d6f748f3eec8e2bbee9`), including controller validation where the generated OpenAPI document is stale. See [API audit](docs/api-audit-4.1.0.md).
+
+### Added
+
+- Five tools (121 total): preview runtime logs, preview domain replacement, preview deletion, and instance email settings read/update.
+- Log options `lines` (including `"all"` and `-1`) and `show_timestamps`; server timestamps default to enabled for time filtering.
+- `is_host_file` for application, database, and service storage creation.
+- Database backup schedule options including `missing_backup_notification_days`, S3 UUID, retention, and timeout.
+- MCP protocol contract tests for request validation, HTTP payloads, log filtering, readonly mode, and destructive confirmation; live tests for settings, backup schedules, and host-file mounts.
+
+### Fixed
+
+- Database backup creation now sends the required `frequency` and optional `backup_now`, and preserves the created schedule UUID.
+- Backup updates use `s3_storage_uuid` instead of invalid `s3_storage_id`; the unsupported `database_name_prefix` input is removed.
+- Storage calls with obsolete `host_path` fail locally with migration guidance instead of sending a rejected request or silently changing mount semantics. Use `type: "file"`, `fs_path`, and `is_directory`/`is_host_file` for host mounts.
+- Volume backup timeouts are validated against Coolify's 60–36000 second bounds.
+- Installation examples use the published package name, `mcp-coolify`.
+
+### Changed
+
+- Integration tests pin Coolify **4.3.23** and set the required Compose project name in CI.
+- New preview/email features are verified on v4.3.23; existing v4.3+ operations remain available. Unreleased main-branch APIs are documented separately, not registered as stable tools.
+
 ## [4.0.0] - 2026-08-12
 
 Aligned with Coolify **v4.3.0** / `main` API (`routes/api.php` + OpenAPI). Requires Coolify v4.3+.

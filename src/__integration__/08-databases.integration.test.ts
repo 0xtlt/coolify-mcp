@@ -48,4 +48,35 @@ describe("08 - Databases", () => {
 		const backups = await client.listDatabaseBackups(databaseUuid!);
 		expect(Array.isArray(backups)).toBe(true);
 	});
+	test("creates and updates a disabled backup schedule with notification settings", async () => {
+		const { databaseUuid } = readState();
+		if (!databaseUuid) throw new Error("Database fixture is missing");
+		const result = await client.createDatabaseBackup(databaseUuid, {
+			frequency: "0 2 * * *",
+			enabled: false,
+			backup_now: false,
+			missing_backup_notification_days: 7,
+		});
+		expect(typeof result.uuid).toBe("string");
+		const backupUuid = String(result.uuid);
+		try {
+			await client.updateDatabaseBackup(databaseUuid, backupUuid, {
+				missing_backup_notification_days: 0,
+				timeout: 600,
+			});
+			const backups = await client.listDatabaseBackups(databaseUuid);
+			expect(backups).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						uuid: backupUuid,
+						enabled: false,
+						missing_backup_notification_days: 0,
+						timeout: 600,
+					}),
+				]),
+			);
+		} finally {
+			await client.deleteDatabaseBackup(databaseUuid, backupUuid);
+		}
+	});
 });

@@ -24,7 +24,7 @@ const scheduleFields = {
 	retention_amount_s3: z.number().int().min(0).optional(),
 	retention_days_s3: z.number().int().min(0).optional(),
 	retention_max_storage_s3: z.number().min(0).optional(),
-	timeout: z.number().int().optional().describe("Backup timeout in seconds"),
+	timeout: z.number().int().min(60).max(36000).optional().describe("Backup timeout in seconds"),
 };
 
 function toScheduleInput(

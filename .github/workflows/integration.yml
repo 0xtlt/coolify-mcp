@@ -10,6 +10,8 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: coolify-mcp
 
     steps:
       - uses: actions/checkout@v7

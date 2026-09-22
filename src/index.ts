@@ -14,6 +14,7 @@ import { registerDeploymentTools } from "./tools/deployments";
 import { registerEnvTools } from "./tools/envs";
 import { registerGitHubAppTools } from "./tools/github-apps";
 import { registerLogTools } from "./tools/logs";
+import { registerPreviewTools } from "./tools/previews";
 import { registerPrivateKeyTools } from "./tools/private-keys";
 import { registerProjectTools } from "./tools/projects";
 import { registerScheduledTaskTools } from "./tools/scheduled-tasks";
@@ -22,6 +23,7 @@ import { registerServiceEnvTools } from "./tools/service-envs";
 import { registerServiceScheduledTaskTools } from "./tools/service-scheduled-tasks";
 import { registerServiceStorageTools } from "./tools/service-storages";
 import { registerServiceTools } from "./tools/services";
+import { registerSettingsTools } from "./tools/settings";
 import { registerStorageTools } from "./tools/storages";
 import { registerSystemTools } from "./tools/system";
 import { registerTeamTools } from "./tools/teams";
@@ -79,12 +81,16 @@ async function main() {
 27. **GitHub Apps**: list_github_apps → list_github_app_repositories → list_github_app_branches
 28. **Backup executions**: list_database_backups → list_backup_executions → delete_backup_execution
 29. **Backup schedule**: update_database_backup (modify frequency, enable/disable)
-30. **All resources**: list_resources (aggregate view across all projects)`,
+30. **All resources**: list_resources (aggregate view across all projects)
+31. **Preview deployments**: get_application_preview_logs / update_application_preview / delete_application_preview (parent app UUID + pull_request_id; Coolify v4.3.23)
+32. **Instance email**: get_instance_email_settings → update_instance_email_settings (root-team admin/owner token; update requires write:sensitive; Coolify v4.3.23)`,
 		},
 	);
 
 	// Register all tools (config controls which tools are available based on safety mode)
 	registerApplicationTools(server, client, config);
+	registerPreviewTools(server, client, config);
+	registerSettingsTools(server, client, config);
 	registerDatabaseTools(server, client, config);
 	registerDatabaseEnvTools(server, client, config);
 	registerDatabaseStorageTools(server, client, config);
