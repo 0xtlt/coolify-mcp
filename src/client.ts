@@ -1,15 +1,23 @@
 import type { Config } from "./config";
 import type {
+	AuditEventFilter,
 	DatabaseBackupInput,
+	DatabaseImportInput,
 	InstanceEmailSettings,
+	IntegrationTokenInput,
+	PreviewDeployInput,
 	PreviewDomainsInput,
+	SecretManagerLinkInput,
 } from "./lib/api-schemas";
 
 import { CoolifyApiError, NetworkError } from "./lib/errors";
 import type {
 	Application,
+	ApplicationPreview,
+	AuditEventPage,
 	BackupExecution,
 	Database,
+	DatabaseImport,
 	Deployment,
 	Environment,
 	EnvironmentVariable,
@@ -21,6 +29,7 @@ import type {
 	ScheduledTask,
 	ScheduledTaskExecution,
 	ServerInfo,
+	ServerRegistries,
 	Service,
 	Storage,
 	StorageListResponse,
@@ -35,9 +44,10 @@ import { normalizeStorageList } from "./types/api";
 type LogLines = number | "all";
 type LogResponse = string | { logs: string };
 
-function logQuery(lines: LogLines, showTimestamps?: boolean): string {
+function logQuery(lines: LogLines, showTimestamps?: boolean, serviceName?: string): string {
 	const params = new URLSearchParams({ lines: String(lines) });
 	if (showTimestamps !== undefined) params.set("show_timestamps", String(showTimestamps));
+	if (serviceName) params.set("service_name", serviceName);
 	return params.toString();
 }
 
@@ -46,6 +56,21 @@ function validateStorageInput(data: { host_path?: string | null }): void {
 		throw new Error(
 			'Coolify no longer accepts host_path. Create a type="file" storage with fs_path and is_directory=true (directory) or is_host_file=true (existing host file). Existing mount sources cannot be changed by PATCH.',
 		);
+	}
+}
+
+// Mirrors the required_if / prohibited_unless rules of Coolify's import endpoint.
+function validateImportInput(data: DatabaseImportInput): void {
+	const allowed = {
+		upload: { upload_id: true, s3_storage_uuid: false, path: false },
+		s3: { upload_id: false, s3_storage_uuid: true, path: true },
+		server: { upload_id: false, s3_storage_uuid: false, path: true },
+	}[data.source];
+	for (const [field, required] of Object.entries(allowed)) {
+		const present = data[field as keyof typeof allowed] !== undefined;
+		if (required && !present) throw new Error(`${field} is required when source=${data.source}.`);
+		if (!required && present)
+			throw new Error(`${field} is not allowed when source=${data.source}.`);
 	}
 }
 
@@ -194,8 +219,12 @@ export class CoolifyClient {
 		uuid: string,
 		lines: LogLines = 100,
 		showTimestamps?: boolean,
+		serviceName?: string,
 	): Promise<LogResponse> {
-		return this.request("GET", `/applications/${uuid}/logs?${logQuery(lines, showTimestamps)}`);
+		return this.request(
+			"GET",
+			`/applications/${uuid}/logs?${logQuery(lines, showTimestamps, serviceName)}`,
+		);
 	}
 
 	// Servers
@@ -229,11 +258,39 @@ export class CoolifyClient {
 		return this.request<{ uuid: string }>("PATCH", `/servers/${uuid}`, data);
 	}
 
-	async deleteServer(uuid: string, opts?: { force?: boolean }): Promise<{ message: string }> {
+	async deleteServer(
+		uuid: string,
+		opts?: { force?: boolean; delete_from_provider?: boolean },
+	): Promise<{ message: string }> {
 		const params = new URLSearchParams();
 		if (opts?.force !== undefined) params.set("force", String(opts.force));
+		if (opts?.delete_from_provider !== undefined)
+			params.set("delete_from_provider", String(opts.delete_from_provider));
 		const qs = params.toString();
 		return this.request("DELETE", `/servers/${uuid}${qs ? `?${qs}` : ""}`);
+	}
+
+	// Docker registry logins (Coolify v4.4+)
+	async listServerRegistries(uuid: string): Promise<ServerRegistries> {
+		return this.request("GET", `/servers/${uuid}/registries`);
+	}
+
+	async loginServerRegistry(
+		uuid: string,
+		data: { registry: string; username: string; password: string },
+	): Promise<{ message: string }> {
+		return this.request("POST", `/servers/${uuid}/registries`, data);
+	}
+
+	async checkServerRegistry(uuid: string, registry: string): Promise<{ message: string }> {
+		return this.request(
+			"POST",
+			`/servers/${uuid}/registries/${encodeURIComponent(registry)}/check`,
+		);
+	}
+
+	async logoutServerRegistry(uuid: string, registry: string): Promise<{ message: string }> {
+		return this.request("DELETE", `/servers/${uuid}/registries/${encodeURIComponent(registry)}`);
 	}
 
 	// Databases
@@ -361,13 +418,19 @@ export class CoolifyClient {
 
 	async deleteService(
 		uuid: string,
-		opts?: { delete_volumes?: boolean; docker_cleanup?: boolean },
+		opts?: {
+			delete_volumes?: boolean;
+			docker_cleanup?: boolean;
+			delete_from_coolify_only?: boolean;
+		},
 	): Promise<{ message: string }> {
 		const params = new URLSearchParams();
 		if (opts?.delete_volumes !== undefined)
 			params.set("delete_volumes", String(opts.delete_volumes));
 		if (opts?.docker_cleanup !== undefined)
 			params.set("docker_cleanup", String(opts.docker_cleanup));
+		if (opts?.delete_from_coolify_only !== undefined)
+			params.set("delete_from_coolify_only", String(opts.delete_from_coolify_only));
 		const qs = params.toString();
 		return this.request("DELETE", `/services/${uuid}${qs ? `?${qs}` : ""}`);
 	}
@@ -581,6 +644,10 @@ export class CoolifyClient {
 
 	async getCurrentTeam(): Promise<Team> {
 		return this.request<Team>("GET", "/team");
+	}
+
+	async updateCurrentTeam(data: { is_build_server_fallback_enabled: boolean }): Promise<Team> {
+		return this.request<Team>("PATCH", "/team", data);
 	}
 
 	async getCurrentTeamMembers(): Promise<TeamMember[]> {
@@ -950,11 +1017,42 @@ export class CoolifyClient {
 		pullRequestId: number,
 		lines: LogLines = 100,
 		showTimestamps?: boolean,
+		serviceName?: string,
 	): Promise<LogResponse> {
 		return this.request(
 			"GET",
-			`/applications/${uuid}/previews/${pullRequestId}/logs?${logQuery(lines, showTimestamps)}`,
+			`/applications/${uuid}/previews/${pullRequestId}/logs?${logQuery(lines, showTimestamps, serviceName)}`,
 		);
+	}
+
+	// Preview deployments (Coolify v4.4+)
+	async listApplicationPreviews(uuid: string): Promise<ApplicationPreview[]> {
+		return this.request<ApplicationPreview[]>("GET", `/applications/${uuid}/previews`);
+	}
+
+	async getApplicationPreview(uuid: string, pullRequestId: number): Promise<ApplicationPreview> {
+		return this.request<ApplicationPreview>(
+			"GET",
+			`/applications/${uuid}/previews/${pullRequestId}`,
+		);
+	}
+
+	async deployApplicationPreview(
+		uuid: string,
+		data: PreviewDeployInput,
+	): Promise<{ message: string; deployment_uuid: string | null; preview: ApplicationPreview }> {
+		if (
+			data.docker_tag !== undefined &&
+			(data.git_type !== undefined || data.commit !== undefined)
+		) {
+			throw new Error(
+				"docker_tag is for Docker Image applications; git_type and commit are for Git applications. Do not combine them.",
+			);
+		}
+		if (data.git_type === "bitbucket" && data.commit === undefined) {
+			throw new Error("commit is required when git_type is bitbucket.");
+		}
+		return this.request("POST", `/applications/${uuid}/previews`, data);
 	}
 
 	async updateApplicationPreview(
@@ -981,6 +1079,64 @@ export class CoolifyClient {
 
 	async updateInstanceEmailSettings(data: InstanceEmailSettings): Promise<InstanceEmailSettings> {
 		return this.request("PATCH", "/settings/email", data);
+	}
+
+	// Database imports (Coolify v4.4+)
+	async createDatabaseImport(uuid: string, data: DatabaseImportInput): Promise<DatabaseImport> {
+		validateImportInput(data);
+		return this.request("POST", `/databases/${uuid}/imports`, data);
+	}
+
+	async getDatabaseImport(uuid: string, activityId: number): Promise<DatabaseImport> {
+		return this.request("GET", `/databases/${uuid}/imports/${activityId}`);
+	}
+
+	async createServiceDatabaseImport(
+		uuid: string,
+		databaseUuid: string,
+		data: DatabaseImportInput,
+	): Promise<DatabaseImport> {
+		validateImportInput(data);
+		return this.request("POST", `/services/${uuid}/databases/${databaseUuid}/imports`, data);
+	}
+
+	async getServiceDatabaseImport(
+		uuid: string,
+		databaseUuid: string,
+		activityId: number,
+	): Promise<DatabaseImport> {
+		return this.request("GET", `/services/${uuid}/databases/${databaseUuid}/imports/${activityId}`);
+	}
+
+	// Secret managers (Coolify v4.4+)
+	async createIntegrationToken(data: IntegrationTokenInput): Promise<{ uuid: string }> {
+		if (data.provider === "doppler" && !/^dp\.(st|sa)\./.test(data.token)) {
+			throw new Error("A Doppler token must start with dp.st. or dp.sa.");
+		}
+		if (data.provider !== "doppler" && !data.metadata?.base_url) {
+			throw new Error(`metadata.base_url is required for ${data.provider}.`);
+		}
+		if (data.provider === "infisical" && !data.metadata?.client_id) {
+			throw new Error("metadata.client_id is required for infisical.");
+		}
+		return this.request<{ uuid: string }>("POST", "/security/integration-tokens", data);
+	}
+
+	async updateApplicationSecretManager(
+		uuid: string,
+		data: SecretManagerLinkInput,
+	): Promise<Record<string, unknown>> {
+		return this.request("PATCH", `/applications/${uuid}/secret-manager`, data);
+	}
+
+	// Audit log (Coolify v4.4+)
+	async listAuditEvents(filter: AuditEventFilter = {}): Promise<AuditEventPage> {
+		const params = new URLSearchParams();
+		for (const [key, value] of Object.entries(filter)) {
+			if (value !== undefined) params.set(key, String(value));
+		}
+		const qs = params.toString();
+		return this.request("GET", `/audit-events${qs ? `?${qs}` : ""}`);
 	}
 
 	// Resources (aggregate)

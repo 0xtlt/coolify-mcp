@@ -23,6 +23,7 @@ function getApplicationActions(uuid: string, status?: string): ResponseAction[] 
 	actions.push(
 		{ tool: "coolify_update_application", args: { uuid }, hint: "Update config" },
 		{ tool: "coolify_trigger_deploy", args: { uuid }, hint: "Deploy" },
+		{ tool: "coolify_list_application_previews", args: { uuid }, hint: "View previews" },
 		{ tool: "coolify_delete_application", args: { uuid }, hint: "Delete" },
 	);
 	return actions;
@@ -136,6 +137,13 @@ export function registerApplicationTools(server: McpServer, client: CoolifyClien
 				publish_directory: z.string().optional().describe("Publish directory for static builds"),
 				is_static: z.boolean().optional().describe("Serve as static site"),
 				is_auto_deploy_enabled: z.boolean().optional().describe("Auto-deploy on push"),
+				custom_container_name_prefix: z
+					.string()
+					.max(255)
+					.optional()
+					.describe(
+						"Readable prefix for generated container names (Coolify v4.4+; slugified, max 30 chars, unique per server)",
+					),
 				instant_deploy: z.boolean().optional().describe("Deploy immediately after update"),
 				custom_fields: z
 					.record(z.string(), z.unknown())
@@ -209,6 +217,13 @@ export function registerApplicationTools(server: McpServer, client: CoolifyClien
 					.string()
 					.optional()
 					.describe("Docker image tag (default: 'latest')"),
+				custom_container_name_prefix: z
+					.string()
+					.max(255)
+					.optional()
+					.describe(
+						"Readable prefix for generated container names (Coolify v4.4+; slugified, max 30 chars, unique per server)",
+					),
 				custom_fields: schemas.customFields,
 			},
 			async ({

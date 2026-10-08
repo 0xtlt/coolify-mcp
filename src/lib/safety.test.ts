@@ -181,6 +181,37 @@ describe("isToolAllowed", () => {
 		expect(isToolAllowed("coolify_list_resources", config)).toBe(true);
 	});
 
+	it("blocks Coolify v4.4 write/destructive tools in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		for (const name of [
+			"coolify_deploy_application_preview",
+			"coolify_import_database",
+			"coolify_import_service_database",
+			"coolify_login_server_registry",
+			"coolify_check_server_registry",
+			"coolify_logout_server_registry",
+			"coolify_create_integration_token",
+			"coolify_update_application_secret_manager",
+			"coolify_update_current_team",
+		]) {
+			expect(isToolAllowed(name, config)).toBe(false);
+		}
+	});
+
+	it("allows Coolify v4.4 read tools in readonly mode", () => {
+		const config = { ...baseConfig, readonly: true };
+		for (const name of [
+			"coolify_list_application_previews",
+			"coolify_get_application_preview",
+			"coolify_get_database_import",
+			"coolify_get_service_database_import",
+			"coolify_list_server_registries",
+			"coolify_list_audit_events",
+		]) {
+			expect(isToolAllowed(name, config)).toBe(true);
+		}
+	});
+
 	it("allows unknown tools by default", () => {
 		expect(isToolAllowed("unknown_tool", baseConfig)).toBe(true);
 	});
@@ -295,6 +326,31 @@ describe("checkConfirmation", () => {
 		expect(
 			checkConfirmation("coolify_update_database_backup", { uuid: "db-1" }, config).proceed,
 		).toBe(true);
+	});
+
+	it("requires confirmation for database imports and registry logout", () => {
+		const config = { ...baseConfig, requireConfirm: true };
+		for (const name of [
+			"coolify_import_database",
+			"coolify_import_service_database",
+			"coolify_logout_server_registry",
+		]) {
+			const result = checkConfirmation(name, { uuid: "abc" }, config);
+			expect(result.proceed).toBe(false);
+			expect(result.response?.isError).toBe(true);
+		}
+	});
+
+	it("does not require confirmation for write-level Coolify v4.4 tools", () => {
+		const config = { ...baseConfig, requireConfirm: true };
+		for (const name of [
+			"coolify_deploy_application_preview",
+			"coolify_login_server_registry",
+			"coolify_create_integration_token",
+			"coolify_update_current_team",
+		]) {
+			expect(checkConfirmation(name, { uuid: "abc" }, config).proceed).toBe(true);
+		}
 	});
 
 	it("proceeds for destructive tools with confirm: true", () => {

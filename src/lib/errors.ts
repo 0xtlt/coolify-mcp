@@ -24,7 +24,7 @@ export class CoolifyApiError extends CoolifyMcpError {
 			case 401:
 				return `Authentication failed. Check your COOLIFY_TOKEN.${detail}`;
 			case 403:
-				return `Access denied. Insufficient permissions.${detail}`;
+				return `Access denied. Insufficient permissions. Check the API token abilities: Coolify v4.4+ needs read:sensitive for logs and deploy for instant_deploy.${detail}`;
 			case 404:
 				return `Resource not found. Check the ID provided.${detail}`;
 			case 429:

@@ -26,6 +26,7 @@ const files = [
 	"16-storages",
 	"17-github-apps",
 	"18-resources",
+	"19-v4-4-endpoints",
 	"14-cleanup",
 ];
 

@@ -665,6 +665,84 @@ describe("CoolifyClient", () => {
 		expect(url).toBe("https://coolify.example.com/api/v1/resources");
 	});
 
+	// Coolify v4.4
+	it("adds delete_from_provider to the deleteServer query", async () => {
+		mockFetch(new Response('{"message":"deleted"}', { status: 200 }));
+		await client.deleteServer("srv-1", { force: true, delete_from_provider: true });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/servers/srv-1?force=true&delete_from_provider=true",
+		);
+		expect(options.method).toBe("DELETE");
+	});
+
+	it("adds service_name to the application logs query", async () => {
+		mockFetch(new Response('{"logs":"line"}', { status: 200 }));
+		await client.getApplicationLogs("app-1", 50, true, "web");
+		const [url] = fetchCalls[0];
+		expect(url).toBe(
+			"https://coolify.example.com/api/v1/applications/app-1/logs?lines=50&show_timestamps=true&service_name=web",
+		);
+	});
+
+	it("encodes the registry host in server registry paths", async () => {
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.checkServerRegistry("srv-1", "registry.example.com:5000");
+		expect(fetchCalls[0][0]).toBe(
+			"https://coolify.example.com/api/v1/servers/srv-1/registries/registry.example.com%3A5000/check",
+		);
+		expect(fetchCalls[0][1].method).toBe("POST");
+
+		mockFetch(new Response('{"message":"ok"}', { status: 200 }));
+		await client.logoutServerRegistry("srv-1", "ghcr.io");
+		expect(fetchCalls[0][0]).toBe(
+			"https://coolify.example.com/api/v1/servers/srv-1/registries/ghcr.io",
+		);
+		expect(fetchCalls[0][1].method).toBe("DELETE");
+	});
+
+	it("uses POST for deployApplicationPreview and validates the source fields", async () => {
+		mockFetch(new Response('{"message":"queued","deployment_uuid":"d-1"}', { status: 201 }));
+		await client.deployApplicationPreview("app-1", { pull_request_id: 42, force: true });
+		const [url, options] = fetchCalls[0];
+		expect(url).toBe("https://coolify.example.com/api/v1/applications/app-1/previews");
+		expect(options.method).toBe("POST");
+		expect(JSON.parse(options.body as string)).toEqual({ pull_request_id: 42, force: true });
+		await expect(
+			client.deployApplicationPreview("app-1", { pull_request_id: 42, git_type: "bitbucket" }),
+		).rejects.toThrow("commit is required");
+		expect(fetchCalls).toHaveLength(1);
+	});
+
+	it("validates database import sources before the request", async () => {
+		mockFetch(new Response('{"id":7,"status":"queued"}', { status: 202 }));
+		await expect(client.createDatabaseImport("db-1", { source: "upload" })).rejects.toThrow(
+			"upload_id is required",
+		);
+		await expect(
+			client.createServiceDatabaseImport("svc-1", "sdb-1", {
+				source: "server",
+				path: "/backups/a.sql",
+				s3_storage_uuid: "s3-1",
+			}),
+		).rejects.toThrow("s3_storage_uuid is not allowed");
+		expect(fetchCalls).toHaveLength(0);
+		const result = await client.createDatabaseImport("db-1", {
+			source: "server",
+			path: "/backups/a.sql",
+		});
+		expect(result.id).toBe(7);
+		expect(fetchCalls[0][0]).toBe("https://coolify.example.com/api/v1/databases/db-1/imports");
+	});
+
+	it("builds the audit events query from the filter", async () => {
+		mockFetch(new Response('{"data":[],"total":0}', { status: 200 }));
+		await client.listAuditEvents({ per_page: 10, action: "deleted" });
+		expect(fetchCalls[0][0]).toBe(
+			"https://coolify.example.com/api/v1/audit-events?per_page=10&action=deleted",
+		);
+	});
+
 	it("parses JSON response correctly", async () => {
 		const apps = [
 			{

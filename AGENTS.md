@@ -2,7 +2,7 @@
 
 ## Cursor Cloud specific instructions
 
-`coolify-mcp` (npm `mcp-coolify`) is a **stdio-based MCP server** (TypeScript, ESM, pnpm) that wraps the Coolify v4.3+ REST API. It exposes 121 tools / 7 resources / 4 prompts. It has **no HTTP server and opens no port** — it speaks the MCP protocol over stdin/stdout and is launched by an MCP client. At runtime it needs `COOLIFY_API_URL` and `COOLIFY_TOKEN` and network access to a reachable Coolify instance; it `process.exit(1)`s immediately if either is missing/invalid.
+`coolify-mcp` (npm `mcp-coolify`) is a **stdio-based MCP server** (TypeScript, ESM, pnpm) that wraps the Coolify v4.3+ REST API. It exposes 136 tools / 7 resources / 4 prompts. It has **no HTTP server and opens no port** — it speaks the MCP protocol over stdin/stdout and is launched by an MCP client. At runtime it needs `COOLIFY_API_URL` and `COOLIFY_TOKEN` and network access to a reachable Coolify instance; it `process.exit(1)`s immediately if either is missing/invalid.
 
 Standard dev commands live in `package.json` scripts and `README.md` (`pnpm run dev`, `pnpm start`, `pnpm run build`, `pnpm run typecheck`, `pnpm test`/`pnpm run test:unit`). Lint/format is Biome; CI runs `pnpm exec biome check .` (no `--write`) — note `pnpm run check` uses `biome check --write` and will modify files. Dependencies are refreshed automatically by the startup update script (`pnpm install`).
 

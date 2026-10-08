@@ -2,9 +2,18 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { CoolifyClient } from "../client";
 import type { Config } from "../config";
+import { pullRequestId } from "../lib/api-schemas";
 import { filterLogs, type LogFilter, parseLogString } from "../lib/filters";
 import * as schemas from "../lib/schemas";
 import { wrap } from "../lib/wrap";
+
+const composeServiceName = z
+	.string()
+	.min(1)
+	.optional()
+	.describe(
+		"Compose service whose container to read (Coolify v4.4+); defaults to the first container",
+	);
 
 const logFilterSchema = {
 	lines: z
@@ -75,10 +84,16 @@ export function registerLogTools(server: McpServer, client: CoolifyClient, _conf
 	server.tool(
 		"coolify_get_application_preview_logs",
 		"Retrieve runtime container logs for an application preview by pull request number (Coolify v4.3.23), with level/time/text filtering.",
-		{ uuid: schemas.uuid, pull_request_id: schemas.numericId, ...logFilterSchema },
+		{
+			uuid: schemas.uuid,
+			pull_request_id: pullRequestId,
+			service_name: composeServiceName,
+			...logFilterSchema,
+		},
 		async ({
 			uuid,
 			pull_request_id,
+			service_name,
 			lines,
 			show_timestamps,
 			level,
@@ -94,6 +109,7 @@ export function registerLogTools(server: McpServer, client: CoolifyClient, _conf
 					pull_request_id,
 					lines ?? limit,
 					show_timestamps,
+					service_name,
 				);
 				return {
 					...processLogs(
@@ -112,11 +128,28 @@ export function registerLogTools(server: McpServer, client: CoolifyClient, _conf
 		"Retrieve logs for a Coolify application with optional filtering by level, time range, or text search",
 		{
 			uuid: schemas.uuid.describe("UUID of the application"),
+			service_name: composeServiceName,
 			...logFilterSchema,
 		},
-		async ({ uuid, lines, show_timestamps, level, since, until, search, limit, tail }) => {
+		async ({
+			uuid,
+			service_name,
+			lines,
+			show_timestamps,
+			level,
+			since,
+			until,
+			search,
+			limit,
+			tail,
+		}) => {
 			return wrap(async () => {
-				const rawLogs = await client.getApplicationLogs(uuid, lines ?? limit, show_timestamps);
+				const rawLogs = await client.getApplicationLogs(
+					uuid,
+					lines ?? limit,
+					show_timestamps,
+					service_name,
+				);
 				const filter = buildLogFilter({ level, since, until, search, limit, tail });
 				return processLogs(rawLogs, filter, "application", uuid);
 			});

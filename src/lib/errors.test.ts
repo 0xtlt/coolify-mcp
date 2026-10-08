@@ -10,7 +10,9 @@ describe("CoolifyApiError", () => {
 
 		it("returns access denied message for 403", () => {
 			const err = new CoolifyApiError("Forbidden", 403);
-			expect(err.toUserMessage()).toBe("Access denied. Insufficient permissions.");
+			expect(err.toUserMessage()).toBe(
+				"Access denied. Insufficient permissions. Check the API token abilities: Coolify v4.4+ needs read:sensitive for logs and deploy for instant_deploy.",
+			);
 		});
 
 		it("returns not found message for 404", () => {
