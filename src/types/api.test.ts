@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	type Application,
+	type ApplicationPreview,
 	type Database,
 	type Deployment,
 	type Environment,
@@ -13,6 +14,7 @@ import {
 	type Service,
 	type Storage,
 	type Team,
+	toApplicationPreviewSummary,
 	toApplicationSummary,
 	toDatabaseSummary,
 	toDeploymentSummary,
@@ -399,6 +401,38 @@ describe("toGitHubAppSummary", () => {
 		expect("app_id" in summary).toBe(false);
 		expect("installation_id" in summary).toBe(false);
 		expect("html_url" in summary).toBe(false);
+		expect("created_at" in summary).toBe(false);
+	});
+});
+
+describe("toApplicationPreviewSummary", () => {
+	const preview: ApplicationPreview = {
+		uuid: "preview-001",
+		pull_request_id: 42,
+		pull_request_html_url: "https://github.com/acme/app/pull/42",
+		git_type: "github",
+		status: "running:healthy",
+		domains: "https://42.app.example.com",
+		docker_compose_domains: null,
+		docker_registry_image_tag: null,
+		created_at: "2026-10-07T00:00:00Z",
+		updated_at: "2026-10-07T00:00:00Z",
+	};
+
+	it("extracts summary fields", () => {
+		expect(toApplicationPreviewSummary(preview)).toEqual({
+			uuid: "preview-001",
+			pull_request_id: 42,
+			status: "running:healthy",
+			domains: "https://42.app.example.com",
+			git_type: "github",
+		});
+	});
+
+	it("excludes detail fields", () => {
+		const summary = toApplicationPreviewSummary(preview);
+		expect("pull_request_html_url" in summary).toBe(false);
+		expect("docker_compose_domains" in summary).toBe(false);
 		expect("created_at" in summary).toBe(false);
 	});
 });

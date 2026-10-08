@@ -260,6 +260,36 @@ const TOOL_METADATA: Record<string, ToolMeta> = {
 	},
 	// Backup Schedule Update
 	coolify_update_database_backup: { level: "write" },
+	// Coolify v4.4: previews
+	coolify_list_application_previews: { level: "read" },
+	coolify_get_application_preview: { level: "read" },
+	coolify_deploy_application_preview: { level: "write" },
+	// Coolify v4.4: database imports
+	coolify_import_database: {
+		level: "destructive",
+		dangerWarning: "Restores a backup into the database and can overwrite existing data.",
+	},
+	coolify_get_database_import: { level: "read" },
+	coolify_import_service_database: {
+		level: "destructive",
+		dangerWarning: "Restores a backup into the service database and can overwrite existing data.",
+	},
+	coolify_get_service_database_import: { level: "read" },
+	// Coolify v4.4: Docker registry logins
+	coolify_list_server_registries: { level: "read" },
+	coolify_login_server_registry: { level: "write" },
+	coolify_check_server_registry: { level: "write" },
+	coolify_logout_server_registry: {
+		level: "destructive",
+		dangerWarning:
+			"Removes the registry login from the server. Deployments that pull private images from it will fail.",
+	},
+	// Coolify v4.4: secret managers
+	coolify_create_integration_token: { level: "write" },
+	coolify_update_application_secret_manager: { level: "write" },
+	// Coolify v4.4: audit log and team settings
+	coolify_list_audit_events: { level: "read" },
+	coolify_update_current_team: { level: "write" },
 };
 
 export function getToolMeta(name: string): ToolMeta | undefined {

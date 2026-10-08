@@ -7,7 +7,9 @@ import { loadConfig } from "./config";
 import { registerPrompts } from "./prompts";
 import { registerResources } from "./resources";
 import { registerApplicationTools } from "./tools/applications";
+import { registerAuditEventTools } from "./tools/audit-events";
 import { registerDatabaseEnvTools } from "./tools/database-envs";
+import { registerDatabaseImportTools } from "./tools/database-imports";
 import { registerDatabaseStorageTools } from "./tools/database-storages";
 import { registerDatabaseTools } from "./tools/databases";
 import { registerDeploymentTools } from "./tools/deployments";
@@ -18,6 +20,8 @@ import { registerPreviewTools } from "./tools/previews";
 import { registerPrivateKeyTools } from "./tools/private-keys";
 import { registerProjectTools } from "./tools/projects";
 import { registerScheduledTaskTools } from "./tools/scheduled-tasks";
+import { registerSecretManagerTools } from "./tools/secret-managers";
+import { registerServerRegistryTools } from "./tools/server-registries";
 import { registerServerTools } from "./tools/servers";
 import { registerServiceEnvTools } from "./tools/service-envs";
 import { registerServiceScheduledTaskTools } from "./tools/service-scheduled-tasks";
@@ -83,7 +87,17 @@ async function main() {
 29. **Backup schedule**: update_database_backup (modify frequency, enable/disable)
 30. **All resources**: list_resources (aggregate view across all projects)
 31. **Preview deployments**: get_application_preview_logs / update_application_preview / delete_application_preview (parent app UUID + pull_request_id; Coolify v4.3.23)
-32. **Instance email**: get_instance_email_settings → update_instance_email_settings (root-team admin/owner token; update requires write:sensitive; Coolify v4.3.23)`,
+32. **Instance email**: get_instance_email_settings → update_instance_email_settings (root-team admin/owner token; update requires write:sensitive; Coolify v4.3.23)
+33. **Open a preview**: list_application_previews → deploy_application_preview → get_application_preview (Coolify v4.4+)
+34. **Restore a database**: import_database (source s3 | server | upload) → get_database_import until status is finished or error; same with import_service_database (Coolify v4.4+)
+35. **Registry logins**: list_server_registries → login_server_registry → check_server_registry / logout_server_registry (Coolify v4.4+)
+36. **Secret managers**: create_integration_token → update_application_secret_manager, then reference secrets as {{vault.KEY}} in env vars (Coolify v4.4+)
+37. **Audit log**: list_audit_events with search / action / source filters (team admin/owner token; Coolify v4.4+)
+
+## Token abilities (Coolify v4.4+)
+- Log tools need **read:sensitive**; with plain read Coolify answers 403
+- instant_deploy on create/update and deploy_application_preview need **deploy**
+- Tools marked Coolify v4.4+ answer 404 on older instances`,
 		},
 	);
 
@@ -93,6 +107,7 @@ async function main() {
 	registerSettingsTools(server, client, config);
 	registerDatabaseTools(server, client, config);
 	registerDatabaseEnvTools(server, client, config);
+	registerDatabaseImportTools(server, client, config);
 	registerDatabaseStorageTools(server, client, config);
 	registerDeploymentTools(server, client, config);
 	registerEnvTools(server, client, config);
@@ -102,6 +117,8 @@ async function main() {
 	registerPrivateKeyTools(server, client, config);
 	registerScheduledTaskTools(server, client, config);
 	registerServerTools(server, client, config);
+	registerServerRegistryTools(server, client, config);
+	registerSecretManagerTools(server, client, config);
 	registerServiceTools(server, client, config);
 	registerServiceEnvTools(server, client, config);
 	registerServiceScheduledTaskTools(server, client, config);
@@ -109,6 +126,7 @@ async function main() {
 	registerStorageTools(server, client, config);
 	registerVolumeBackupTools(server, client, config);
 	registerSystemTools(server, client, config);
+	registerAuditEventTools(server, client, config);
 	registerTeamTools(server, client, config);
 
 	// Register resources

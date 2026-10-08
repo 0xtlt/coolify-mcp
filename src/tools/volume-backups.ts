@@ -25,6 +25,15 @@ const scheduleFields = {
 	retention_days_s3: z.number().int().min(0).optional(),
 	retention_max_storage_s3: z.number().min(0).optional(),
 	timeout: z.number().int().min(60).max(36000).optional().describe("Backup timeout in seconds"),
+	missing_backup_notification_days: z
+		.number()
+		.int()
+		.min(0)
+		.max(365)
+		.optional()
+		.describe(
+			"Alert after this many days without an execution; 0 disables alerts (Coolify v4.4.1)",
+		),
 };
 
 function toScheduleInput(

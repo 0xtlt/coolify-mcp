@@ -2,11 +2,11 @@
 
 MCP server for managing Coolify instances (**v4.3+ API**). Control applications, databases, services, servers, and more directly from Claude or any MCP-compatible client.
 
-**121 tools | 7 resources | 4 prompts**
+**136 tools | 7 resources | 4 prompts**
 
-Requires Coolify **v4.3.0** or newer (`/api/v1`); **v4.3.23 is recommended** and is the integration-test target for MCP **4.1.0**. New preview and instance-email features were verified on v4.3.23. Legacy GET-based state-changing endpoints are not supported.
+Requires Coolify **v4.3.0** or newer (`/api/v1`); **v4.4.2 is recommended** and is the integration-test target for MCP **4.2.0**. Tools and options marked *v4.4+* need Coolify v4.4.0 or newer and answer `404` or `422` on older instances. Legacy GET-based state-changing endpoints are not supported.
 
-See the [4.1.0 API audit](docs/api-audit-4.1.0.md) for pinned upstream sources, compatibility changes, and unreleased endpoints.
+See the [4.2.0 API audit](docs/api-audit-4.2.0.md) for pinned upstream sources, compatibility changes, and endpoints that are not wrapped. The [4.1.0 audit](docs/api-audit-4.1.0.md) covers v4.3.23.
 
 ## Installation
 
@@ -67,6 +67,15 @@ Add to `~/.claude/claude_desktop_config.json`:
 
 Coolify dashboard: **Keys & Tokens > API tokens**
 
+On Coolify v4.4+ pick the token abilities for what you want to do:
+
+| Ability | Needed for |
+|---------|------------|
+| `read` | List and get tools |
+| `read:sensitive` | All log tools, `coolify_list_server_registries`, secrets in responses, audit event details, import output |
+| `write` | [WRITE] and [DESTRUCTIVE] tools |
+| `deploy` | Deploy, start, stop and restart tools, `instant_deploy`, `coolify_deploy_application_preview`, database imports from a server path |
+
 ## Available Tools
 
 ### Applications (8)
@@ -82,12 +91,15 @@ Coolify dashboard: **Keys & Tokens > API tokens**
 | `coolify_restart_application` | [DESTRUCTIVE] Restart an application |
 | `coolify_delete_application` | [DESTRUCTIVE] Delete an application |
 
-### Preview Deployments (3)
+### Preview Deployments (6)
 
-Verified on Coolify v4.3.23. Each tool takes the parent application `uuid` and a positive integer `pull_request_id`.
+Each tool takes the parent application `uuid`; all but the list take a `pull_request_id` between 1 and 2147483647. List, get and deploy need Coolify v4.4+.
 
 | Tool | Description |
 |------|-------------|
+| `coolify_list_application_previews` | List previews of an application (summary) |
+| `coolify_get_application_preview` | Get one preview with its domains and status |
+| `coolify_deploy_application_preview` | [WRITE] Open or redeploy the preview of a pull request (`git_type`/`commit` for Git apps, `docker_tag` for Docker Image apps) |
 | `coolify_get_application_preview_logs` | Read preview runtime logs with the same filters as application logs |
 | `coolify_update_application_preview` | [WRITE] Replace preview domains using `domains` or `docker_compose_domains` |
 | `coolify_delete_application_preview` | [DESTRUCTIVE] Remove the preview, its containers, volumes, and networks |
@@ -98,7 +110,7 @@ Verified on Coolify v4.3.23. Each tool takes the parent application `uuid` and a
 |------|-------------|
 | `coolify_list_databases` | List all databases (summary) |
 | `coolify_get_database` | Get database details |
-| `coolify_create_database` | [WRITE] Create PostgreSQL, MySQL, MariaDB, MongoDB, Redis, etc. |
+| `coolify_create_database` | [WRITE] Create PostgreSQL, MySQL, MariaDB, MongoDB, Redis, KeyDB, Dragonfly, ClickHouse, or SQLite (v4.4+) |
 | `coolify_update_database` | [WRITE] Update database config |
 | `coolify_list_database_backups` | List backups for a database |
 | `coolify_create_database_backup` | [WRITE] Create a backup schedule (`frequency` required, optional `backup_now`) |
@@ -115,6 +127,17 @@ Verified on Coolify v4.3.23. Each tool takes the parent application `uuid` and a
 | `coolify_update_database_backup` | [WRITE] Update schedule, retention, S3 and missing-backup alerts |
 | `coolify_list_backup_executions` | List execution history for a database backup schedule |
 | `coolify_delete_backup_execution` | [DESTRUCTIVE] Delete a backup execution |
+
+### Database Imports (4)
+
+Coolify v4.4+. An import runs in the background: start it, then poll the status tool until `status` is `finished` or `error`. `source` is `s3` (`s3_storage_uuid` + `path`), `server` (absolute `path` on the database server) or `upload` (`upload_id` of a file sent to `POST .../imports/uploads`).
+
+| Tool | Description |
+|------|-------------|
+| `coolify_import_database` | [DESTRUCTIVE] Restore a backup into a standalone database |
+| `coolify_get_database_import` | Get the status of a standalone database import |
+| `coolify_import_service_database` | [DESTRUCTIVE] Restore a backup into a database of a service |
+| `coolify_get_service_database_import` | Get the status of a service database import |
 
 ### Services (8)
 
@@ -140,7 +163,18 @@ Verified on Coolify v4.3.23. Each tool takes the parent application `uuid` and a
 | `coolify_validate_server` | [WRITE] Validate SSH connectivity and Docker (POST) |
 | `coolify_get_server_resources` | List all resources on a server |
 | `coolify_get_server_domains` | List all domains on a server |
-| `coolify_delete_server` | [DESTRUCTIVE] Delete a server |
+| `coolify_delete_server` | [DESTRUCTIVE] Delete a server (`delete_from_provider` also deletes the cloud machine, v4.4+) |
+
+### Docker Registry Logins (4)
+
+Coolify v4.4+. Coolify runs `docker login` on the server and does not store the token. `registry` is a host such as `ghcr.io` or `registry.example.com:5000`.
+
+| Tool | Description |
+|------|-------------|
+| `coolify_list_server_registries` | List registries a server is logged in to and the ones its applications need |
+| `coolify_login_server_registry` | [WRITE] Log in to a registry or update the login |
+| `coolify_check_server_registry` | [WRITE] Check that a stored login still works |
+| `coolify_logout_server_registry` | [DESTRUCTIVE] Log out of a registry |
 
 ### Private Keys (5)
 
@@ -276,6 +310,23 @@ Verified on Coolify v4.3.23. Each tool takes the parent application `uuid` and a
 | `coolify_healthcheck` | Check if Coolify is healthy |
 | `coolify_list_resources` | List resources across projects |
 
+### Audit Log (1)
+
+Coolify v4.4+. Requires a team admin/owner API token.
+
+| Tool | Description |
+|------|-------------|
+| `coolify_list_audit_events` | List UI, API, MCP and webhook activity, newest first (`search`, `action`, `source`, `page`, `per_page`) |
+
+### Secret Managers (2)
+
+Coolify v4.4+. After linking, reference secrets in environment variables as `{{vault.KEY}}`.
+
+| Tool | Description |
+|------|-------------|
+| `coolify_create_integration_token` | [WRITE] Store a Doppler, Infisical, or HashiCorp Vault token for the team |
+| `coolify_update_application_secret_manager` | [WRITE] Link an application to a secret manager token |
+
 ### Instance Email Settings (2)
 
 Verified on Coolify v4.3.23. Requires a root-team admin/owner API token. Reading secret values requires `read:sensitive` or `root`; updating requires `write:sensitive`.
@@ -285,12 +336,13 @@ Verified on Coolify v4.3.23. Requires a root-team admin/owner API token. Reading
 | `coolify_get_instance_email_settings` | Read instance-wide SMTP and Resend settings |
 | `coolify_update_instance_email_settings` | [WRITE] Update SMTP/Resend settings; `null` clears nullable fields |
 
-### Teams (4)
+### Teams (5)
 
 | Tool | Description |
 |------|-------------|
 | `coolify_list_teams` | List all teams |
 | `coolify_get_current_team` | Get token team (`GET /team`) |
+| `coolify_update_current_team` | [WRITE] Set the build server fallback of the token team (v4.4+) |
 | `coolify_get_current_team_members` | List token team members (`GET /team/members`) |
 | `coolify_get_team_members` | List members of a team by ID |
 
@@ -333,6 +385,18 @@ The `coolify_get_logs`, `coolify_get_application_preview_logs`, `coolify_get_dat
 - `show_timestamps`: Include server timestamps (default true)
 - `limit`: Max filtered entries returned (default 100, max 1000)
 - `tail`: Get most recent logs
+- `service_name` (application and preview logs, v4.4+): Compose service whose container to read
+
+Coolify v4.4+ only serves logs to tokens with the `read:sensitive` ability.
+
+## API Compatibility Notes for 4.2.0
+
+- **Logs need `read:sensitive` on Coolify v4.4+.** A token with only `read` gets `403` from every log tool. Create a new token with `read:sensitive`, or `root`.
+- `instant_deploy` on application, database and service creation, and on application updates, needs the `deploy` ability on Coolify v4.4+.
+- Servers have a `server_role` (`deployment`, `build`, `both`). `is_build_server` still works but is deprecated; sending both with different meanings fails before the request.
+- Scheduled task `timeout` is limited to 1-36000 seconds, as Coolify v4.4 validates it.
+- Database start and restart answer `409` while another start, restart or import runs.
+- The multipart upload endpoint for imports (`POST .../imports/uploads`, up to 10 GiB) is not wrapped. Use `source: "s3"` or `source: "server"`, or upload the file yourself and pass its `upload_id`.
 
 ## API Compatibility Notes for 4.1.0
 

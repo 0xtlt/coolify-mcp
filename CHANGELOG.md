@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-10-08
+
+Audited against Coolify **v4.4.2** (`76d3386a4d69f894258210ea265717a8fb8cd778`), from v4.3.23. See [API audit](docs/api-audit-4.2.0.md).
+
+### Added
+
+- Fifteen tools (136 total), all for Coolify v4.4+:
+  - Previews: `coolify_list_application_previews`, `coolify_get_application_preview`, `coolify_deploy_application_preview`.
+  - Database imports: `coolify_import_database`, `coolify_get_database_import`, `coolify_import_service_database`, `coolify_get_service_database_import`.
+  - Docker registry logins: `coolify_list_server_registries`, `coolify_login_server_registry`, `coolify_check_server_registry`, `coolify_logout_server_registry`.
+  - Secret managers: `coolify_create_integration_token`, `coolify_update_application_secret_manager`.
+  - `coolify_list_audit_events` and `coolify_update_current_team`.
+- SQLite as a `coolify_create_database` type, with `sqlite_databases`.
+- `service_name` on application and preview logs to pick a Compose service container.
+- `server_role` on server create/update, `server_disk_usage_notification_interval_hours` on server update, and `delete_from_provider` on server delete.
+- `custom_container_name_prefix` on application create/update.
+- `delete_from_coolify_only` on service delete.
+- `missing_backup_notification_days` on volume backup schedules (Coolify v4.4.1).
+
+### Changed
+
+- Integration tests pin Coolify **4.4.2**; the whole suite, including the new endpoints, passes against it.
+- Scheduled task `timeout` is validated against Coolify's 1-36000 second bounds.
+- The `403` error message points to the token abilities Coolify v4.4 now requires (`read:sensitive` for logs, `deploy` for `instant_deploy`).
+- Database imports and registry logout are destructive tools: blocked in readonly mode and confirmed with `confirm: true` when `COOLIFY_REQUIRE_CONFIRM` is set.
+
+### Compatibility
+
+- No tool was removed or renamed. Coolify v4.3.x keeps working with the tools that existed in 4.1.0.
+- On Coolify v4.4+, log tools need a token with `read:sensitive`. This is an upstream change, not an MCP change.
+
 ## [4.1.0] - 2026-09-22
 
 Audited against Coolify **v4.3.23** (`e2e2d4010bcd590084b66d6f748f3eec8e2bbee9`), including controller validation where the generated OpenAPI document is stale. See [API audit](docs/api-audit-4.1.0.md).

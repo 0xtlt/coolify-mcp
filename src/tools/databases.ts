@@ -19,6 +19,11 @@ function getDatabaseActions(uuid: string, status?: string): ResponseAction[] {
 			hint: "Create a backup schedule (frequency required)",
 		},
 		{ tool: "coolify_update_database", args: { uuid }, hint: "Update config" },
+		{
+			tool: "coolify_import_database",
+			args: { uuid },
+			hint: "Restore a backup (source required)",
+		},
 	];
 	if (status === "running" || status?.startsWith("running:")) {
 		actions.push(
@@ -164,6 +169,7 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 						"dragonfly",
 						"keydb",
 						"clickhouse",
+						"sqlite",
 					])
 					.describe("Database engine type"),
 				server_uuid: schemas.serverUuid,
@@ -181,7 +187,7 @@ export function registerDatabaseTools(server: McpServer, client: CoolifyClient, 
 					.record(z.string(), z.unknown())
 					.optional()
 					.describe(
-						"Type-specific config. Postgres: postgres_user, postgres_password, postgres_db. MySQL/MariaDB: mysql_root_password, mysql_database, mysql_user, mysql_password. MongoDB: mongo_initdb_root_username, mongo_initdb_root_password. Redis: redis_password. ClickHouse: clickhouse_admin_user, clickhouse_admin_password",
+						"Type-specific config. Postgres: postgres_user, postgres_password, postgres_db. MySQL/MariaDB: mysql_root_password, mysql_database, mysql_user, mysql_password. MongoDB: mongo_initdb_root_username, mongo_initdb_root_password. Redis: redis_password. ClickHouse: clickhouse_admin_user, clickhouse_admin_password. SQLite (Coolify v4.4+, no is_public/public_port): sqlite_databases (comma-separated file names)",
 					),
 				custom_fields: schemas.customFields,
 			},

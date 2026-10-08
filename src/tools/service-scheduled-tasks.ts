@@ -34,7 +34,7 @@ export function registerServiceScheduledTaskTools(
 				command: z.string().min(1).describe("Command to execute"),
 				frequency: z.string().min(1).describe("Cron frequency (e.g. '* * * * *')"),
 				container: z.string().optional().describe("Container name to run in"),
-				timeout: z.number().int().optional().describe("Timeout in seconds"),
+				timeout: z.number().int().min(1).max(36000).optional().describe("Timeout in seconds"),
 				enabled: z.boolean().optional().describe("Whether the task is enabled"),
 			},
 			async ({ uuid, name, command, frequency, container, timeout, enabled }) => {
@@ -66,7 +66,7 @@ export function registerServiceScheduledTaskTools(
 				command: z.string().optional().describe("Command to execute"),
 				frequency: z.string().optional().describe("Cron frequency"),
 				container: z.string().optional().describe("Container name"),
-				timeout: z.number().int().optional().describe("Timeout in seconds"),
+				timeout: z.number().int().min(1).max(36000).optional().describe("Timeout in seconds"),
 				enabled: z.boolean().optional().describe("Whether the task is enabled"),
 			},
 			async ({ uuid, task_uuid, ...fields }) => {

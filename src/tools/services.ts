@@ -189,14 +189,24 @@ export function registerServiceTools(server: McpServer, client: CoolifyClient, c
 				confirm: schemas.confirm,
 				delete_volumes: z.boolean().default(true).describe("Also delete associated volumes"),
 				docker_cleanup: z.boolean().default(true).describe("Clean up Docker resources"),
+				delete_from_coolify_only: z
+					.boolean()
+					.optional()
+					.describe(
+						"Remove the service from Coolify and leave its Docker resources on the server (Coolify v4.4+)",
+					),
 			},
-			async ({ uuid, confirm, delete_volumes, docker_cleanup }) => {
+			async ({ uuid, confirm, delete_volumes, docker_cleanup, delete_from_coolify_only }) => {
 				if (!isToolAllowed("coolify_delete_service", config))
 					return readonlyError("coolify_delete_service");
 				const check = checkConfirmation("coolify_delete_service", { uuid, confirm }, config);
 				if (!check.proceed) return check.response!;
 				return wrap(async () => {
-					const result = await client.deleteService(uuid, { delete_volumes, docker_cleanup });
+					const result = await client.deleteService(uuid, {
+						delete_volumes,
+						docker_cleanup,
+						delete_from_coolify_only,
+					});
 					return result.message || `Service ${uuid} deleted`;
 				});
 			},

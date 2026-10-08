@@ -276,6 +276,8 @@ export interface VolumeBackupSchedule {
 	retention_days_s3: number;
 	retention_max_storage_s3: number;
 	timeout: number;
+	/** Coolify v4.4.1+ */
+	missing_backup_notification_days?: number;
 }
 
 export interface VolumeBackupScheduleInput {
@@ -292,6 +294,85 @@ export interface VolumeBackupScheduleInput {
 	retention_days_s3?: number;
 	retention_max_storage_s3?: number;
 	timeout?: number;
+	missing_backup_notification_days?: number;
+}
+
+// --- Coolify v4.4 types ---
+
+export interface ApplicationPreview {
+	uuid: string;
+	pull_request_id: number;
+	pull_request_html_url: string | null;
+	git_type: string | null;
+	status: string;
+	domains: string | null;
+	docker_compose_domains: Array<{
+		name: string;
+		domain: string | null;
+		redirect?: string | null;
+	}> | null;
+	domain_port_overrides?: unknown;
+	docker_registry_image_tag: string | null;
+	last_online_at?: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface ApplicationPreviewSummary {
+	uuid: string;
+	pull_request_id: number;
+	status: string;
+	domains: string | null;
+	git_type: string | null;
+}
+
+export interface DatabaseImport {
+	id: number;
+	status: string;
+	message?: string;
+	status_url?: string;
+	exit_code?: number | null;
+	/** Returned only to tokens with read:sensitive that may update the database. */
+	output?: string | null;
+	created_at?: string;
+	updated_at?: string;
+	finished_at?: string | null;
+}
+
+export interface ServerRegistries {
+	registries: Array<{
+		registry: string;
+		logged_in: boolean;
+		source: string | null;
+		username: string | null;
+		used_by: unknown[];
+	}>;
+	error: string | null;
+}
+
+export interface AuditEvent {
+	id: number;
+	event: string;
+	source: string;
+	action: string;
+	level: string;
+	actor_name?: string | null;
+	resource_type?: string | null;
+	resource_uuid?: string | null;
+	resource_name?: string | null;
+	description?: string | null;
+	created_at: string;
+	[key: string]: unknown;
+}
+
+/** Laravel paginator envelope returned by GET /audit-events. */
+export interface AuditEventPage {
+	data: AuditEvent[];
+	current_page: number;
+	per_page: number;
+	total: number;
+	last_page: number;
+	[key: string]: unknown;
 }
 
 // --- GitHub Apps types ---
@@ -416,6 +497,18 @@ export function toTeamSummary(team: Team): TeamSummary {
 		id: team.id,
 		name: team.name,
 		description: team.description,
+	};
+}
+
+export function toApplicationPreviewSummary(
+	preview: ApplicationPreview,
+): ApplicationPreviewSummary {
+	return {
+		uuid: preview.uuid,
+		pull_request_id: preview.pull_request_id,
+		status: preview.status,
+		domains: preview.domains,
+		git_type: preview.git_type,
 	};
 }
 
