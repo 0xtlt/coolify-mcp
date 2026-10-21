@@ -115,30 +115,30 @@ describe("Coolify v4.3.23 and v4.4.2 MCP contracts", () => {
 		request("GET", "/applications/app-1/previews/42/logs?lines=all&show_timestamps=true");
 	});
 
-	it.each([
-		"logs",
-		"database_logs",
-		"service_logs",
-	])("supports timestamp and line options for %s", async (name) => {
-		const resource =
-			name === "logs" ? "applications" : name === "database_logs" ? "databases" : "services";
-		await mcp.callTool({
-			name: `coolify_get_${name}`,
-			arguments: { uuid: "resource-1", lines: -1, show_timestamps: false },
-		});
-		request("GET", `/${resource}/resource-1/logs?lines=-1&show_timestamps=false`);
-	});
+	it.each(["logs", "database_logs", "service_logs"])(
+		"supports timestamp and line options for %s",
+		async (name) => {
+			const resource =
+				name === "logs" ? "applications" : name === "database_logs" ? "databases" : "services";
+			await mcp.callTool({
+				name: `coolify_get_${name}`,
+				arguments: { uuid: "resource-1", lines: -1, show_timestamps: false },
+			});
+			request("GET", `/${resource}/resource-1/logs?lines=-1&show_timestamps=false`);
+		},
+	);
 
-	it.each([
-		0, -1, 1.5,
-	])("rejects invalid preview PR number %s before HTTP", async (pull_request_id) => {
-		const result = await mcp.callTool({
-			name: "coolify_get_application_preview_logs",
-			arguments: { uuid: "app-1", pull_request_id },
-		});
-		expect(result.isError).toBe(true);
-		expect(fetchMock).not.toHaveBeenCalled();
-	});
+	it.each([0, -1, 1.5])(
+		"rejects invalid preview PR number %s before HTTP",
+		async (pull_request_id) => {
+			const result = await mcp.callTool({
+				name: "coolify_get_application_preview_logs",
+				arguments: { uuid: "app-1", pull_request_id },
+			});
+			expect(result.isError).toBe(true);
+			expect(fetchMock).not.toHaveBeenCalled();
+		},
+	);
 
 	it.each([
 		{ domains: null },
@@ -156,17 +156,17 @@ describe("Coolify v4.3.23 and v4.4.2 MCP contracts", () => {
 		request("PATCH", "/applications/app-1/previews/42", fields);
 	});
 
-	it.each([
-		{},
-		{ domains: null, docker_compose_domains: [] },
-	])("rejects ambiguous preview update %j", async (fields) => {
-		const result = await mcp.callTool({
-			name: "coolify_update_application_preview",
-			arguments: { uuid: "app-1", pull_request_id: 42, ...fields },
-		});
-		expect(result.isError).toBe(true);
-		expect(fetchMock).not.toHaveBeenCalled();
-	});
+	it.each([{}, { domains: null, docker_compose_domains: [] }])(
+		"rejects ambiguous preview update %j",
+		async (fields) => {
+			const result = await mcp.callTool({
+				name: "coolify_update_application_preview",
+				arguments: { uuid: "app-1", pull_request_id: 42, ...fields },
+			});
+			expect(result.isError).toBe(true);
+			expect(fetchMock).not.toHaveBeenCalled();
+		},
+	);
 
 	it("requires confirmation before deleting preview volumes", async () => {
 		const args = { uuid: "app-1", pull_request_id: 42 };
@@ -198,18 +198,17 @@ describe("Coolify v4.3.23 and v4.4.2 MCP contracts", () => {
 		request("PATCH", "/settings/email", fields);
 	});
 
-	it.each([
-		{ smtp_port: 65536 },
-		{ smtp_encryption: "ssl" },
-		{ smtp_timeout: -1 },
-	])("rejects invalid email settings %j", async (fields) => {
-		const result = await mcp.callTool({
-			name: "coolify_update_instance_email_settings",
-			arguments: fields,
-		});
-		expect(result.isError).toBe(true);
-		expect(fetchMock).not.toHaveBeenCalled();
-	});
+	it.each([{ smtp_port: 65536 }, { smtp_encryption: "ssl" }, { smtp_timeout: -1 }])(
+		"rejects invalid email settings %j",
+		async (fields) => {
+			const result = await mcp.callTool({
+				name: "coolify_update_instance_email_settings",
+				arguments: fields,
+			});
+			expect(result.isError).toBe(true);
+			expect(fetchMock).not.toHaveBeenCalled();
+		},
+	);
 
 	it("keeps new reads but excludes writes and preview deletion in readonly mode", async () => {
 		await mcp.close();
@@ -227,49 +226,47 @@ describe("Coolify v4.3.23 and v4.4.2 MCP contracts", () => {
 		}
 	});
 
-	it.each([
-		"application",
-		"database",
-		"service",
-	])("creates %s host-file mounts using the current payload", async (resource) => {
-		const fields = {
-			type: "file",
-			mount_path: "/etc/app.conf",
-			fs_path: "/data/app.conf",
-			is_host_file: true,
-			...(resource === "service" ? { resource_uuid: "child-1" } : {}),
-		};
-		const result = await mcp.callTool({
-			name: `coolify_create_${resource}_storage`,
-			arguments: { uuid: "resource-1", ...fields },
-		});
-		expect(result.isError).toBeFalsy();
-		request("POST", `/${resource}s/resource-1/storages`, fields);
-	});
-
-	it.each([
-		"application",
-		"database",
-		"service",
-	])("rejects obsolete %s host_path before HTTP for create and update", async (resource) => {
-		for (const action of ["create", "update"]) {
+	it.each(["application", "database", "service"])(
+		"creates %s host-file mounts using the current payload",
+		async (resource) => {
+			const fields = {
+				type: "file",
+				mount_path: "/etc/app.conf",
+				fs_path: "/data/app.conf",
+				is_host_file: true,
+				...(resource === "service" ? { resource_uuid: "child-1" } : {}),
+			};
 			const result = await mcp.callTool({
-				name: `coolify_${action}_${resource}_storage`,
-				arguments: {
-					uuid: "resource-1",
-					resource_uuid: "child-1",
-					storage_uuid: "storage-1",
-					type: "persistent",
-					name: "data",
-					mount_path: "/data",
-					host_path: "/host/data",
-				},
+				name: `coolify_create_${resource}_storage`,
+				arguments: { uuid: "resource-1", ...fields },
 			});
-			expect(result.isError).toBe(true);
-			expect(JSON.stringify(result)).toContain("fs_path");
-		}
-		expect(fetchMock).not.toHaveBeenCalled();
-	});
+			expect(result.isError).toBeFalsy();
+			request("POST", `/${resource}s/resource-1/storages`, fields);
+		},
+	);
+
+	it.each(["application", "database", "service"])(
+		"rejects obsolete %s host_path before HTTP for create and update",
+		async (resource) => {
+			for (const action of ["create", "update"]) {
+				const result = await mcp.callTool({
+					name: `coolify_${action}_${resource}_storage`,
+					arguments: {
+						uuid: "resource-1",
+						resource_uuid: "child-1",
+						storage_uuid: "storage-1",
+						type: "persistent",
+						name: "data",
+						mount_path: "/data",
+						host_path: "/host/data",
+					},
+				});
+				expect(result.isError).toBe(true);
+				expect(JSON.stringify(result)).toContain("fs_path");
+			}
+			expect(fetchMock).not.toHaveBeenCalled();
+		},
+	);
 
 	it("requires a backup frequency and preserves the created schedule UUID", async () => {
 		const missing = await mcp.callTool({
@@ -494,26 +491,24 @@ describe("Coolify v4.3.23 and v4.4.2 MCP contracts", () => {
 		request("DELETE", "/servers/srv-1/registries/ghcr.io");
 	});
 
-	it.each([
-		"https://ghcr.io",
-		"ghcr.io/owner",
-		"../keys",
-		"",
-	])("rejects registry %j before HTTP", async (registry) => {
-		for (const name of ["coolify_check_server_registry", "coolify_logout_server_registry"]) {
-			const result = await mcp.callTool({
-				name,
-				arguments: { uuid: "srv-1", registry, confirm: true },
+	it.each(["https://ghcr.io", "ghcr.io/owner", "../keys", ""])(
+		"rejects registry %j before HTTP",
+		async (registry) => {
+			for (const name of ["coolify_check_server_registry", "coolify_logout_server_registry"]) {
+				const result = await mcp.callTool({
+					name,
+					arguments: { uuid: "srv-1", registry, confirm: true },
+				});
+				expect(result.isError).toBe(true);
+			}
+			const login = await mcp.callTool({
+				name: "coolify_login_server_registry",
+				arguments: { uuid: "srv-1", registry, username: "octocat", password: "test-token" },
 			});
-			expect(result.isError).toBe(true);
-		}
-		const login = await mcp.callTool({
-			name: "coolify_login_server_registry",
-			arguments: { uuid: "srv-1", registry, username: "octocat", password: "test-token" },
-		});
-		expect(login.isError).toBe(true);
-		expect(fetchMock).not.toHaveBeenCalled();
-	});
+			expect(login.isError).toBe(true);
+			expect(fetchMock).not.toHaveBeenCalled();
+		},
+	);
 
 	it("rejects a registry username with spaces before HTTP", async () => {
 		const result = await mcp.callTool({
