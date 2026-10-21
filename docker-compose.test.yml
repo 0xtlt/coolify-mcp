@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:15.19-alpine3.24
     environment:
       POSTGRES_DB: coolify
       POSTGRES_USER: coolify
@@ -14,7 +14,7 @@ services:
       - coolify-test-db:/var/lib/postgresql/data
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.11-alpine3.21
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
